@@ -131,7 +131,7 @@ $chapa->payouts()->create([
     'amount' => 10000,
     'currency' => 'ETB',
     'account' => ['account_number' => '251911000000', 'account_name' => 'Abebe Kebede', 'bank_slug' => 'telebirr'],
-], $key); // Use a DIFFERENT key for a different operation.
+], IdempotencyKey::generate()); // Persist this *separate* payout key before sending.
 
 $chapa->refunds()->create(['payment_reference' => 'CH0Vn2VASWCi'], IdempotencyKey::generate());
 $chapa->balances()->get('ETB');
