@@ -1,0 +1,27 @@
+name: Bug report
+about: Report a PHP/Laravel SDK issue without exposing secrets or customer data
+title: 'bug: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never include API keys, webhook secrets, signatures, access tokens, real customer data or real banking information. Report security flaws privately using GitHub Security Advisories.
+  - type: input
+    id: version
+    attributes:
+      label: SDK revision and PHP/Laravel version
+      placeholder: 'commit SHA; PHP 8.3; Laravel 12'
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Include the documented Chapa v2 endpoint and synthetic input only.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproducible code (without secrets)

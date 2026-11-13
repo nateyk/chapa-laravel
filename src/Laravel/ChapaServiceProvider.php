@@ -6,6 +6,10 @@ namespace Nateyk\Chapa\Laravel;
 
 use Illuminate\Support\ServiceProvider;
 use Nateyk\Chapa\ChapaClient;
+use Nateyk\Chapa\Laravel\Webhooks\WebhookInbox;
+use Nateyk\Chapa\Laravel\Webhooks\WebhookProcessor;
+use Nateyk\Chapa\Laravel\Console\ProcessChapaWebhooks;
+use Nateyk\Chapa\Laravel\Console\RetryChapaWebhook;
 
 final class ChapaServiceProvider extends ServiceProvider
 {
@@ -26,6 +30,8 @@ final class ChapaServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(ChapaClient::class, 'chapa');
+        $this->app->singleton(WebhookInbox::class);
+        $this->app->singleton(WebhookProcessor::class);
     }
 
     public function boot(): void
@@ -33,5 +39,11 @@ final class ChapaServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../../config/chapa.php' => config_path('chapa.php'),
         ], 'chapa-config');
+        $this->publishesMigrations([
+            __DIR__.'/../../database/migrations' => database_path('migrations'),
+        ], 'chapa-migrations');
+        if ($this->app->runningInConsole()) {
+            $this->commands([ProcessChapaWebhooks::class, RetryChapaWebhook::class]);
+        }
     }
 }

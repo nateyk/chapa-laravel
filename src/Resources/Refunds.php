@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Nateyk\Chapa\Resources;
 
 use Nateyk\Chapa\Http\ApiResponse;
+use Nateyk\Chapa\Dto\RefundRequest;
+use Nateyk\Chapa\Dto\VerifiedTransaction;
 use Nateyk\Chapa\Http\HttpClient;
 use Nateyk\Chapa\Support\RequestValidator as Validate;
 
@@ -15,8 +17,9 @@ final class Refunds
     }
 
     /** @param array<string, mixed> $payload Omit amount to refund the entire payment. */
-    public function create(array $payload, string $idempotencyKey): ApiResponse
+    public function create(array|RefundRequest $payload, string $idempotencyKey): ApiResponse
     {
+        $payload = $payload instanceof RefundRequest ? $payload->toArray() : $payload;
         Validate::nonEmpty($payload, 'payment_reference');
         Validate::merchantReference($payload);
         if (array_key_exists('amount', $payload)
@@ -32,6 +35,12 @@ final class Refunds
     public function verify(string $reference): ApiResponse
     {
         return $this->http->request('GET', '/v2/refunds/'.Validate::reference($reference).'/verify');
+    }
+
+    /** Refund verification requires the refund reference, not the original payment reference. */
+    public function verifyTyped(string $reference): VerifiedTransaction
+    {
+        return VerifiedTransaction::fromResponse($this->verify($reference), 'refund');
     }
 
     /** @param array<string, mixed> $query */

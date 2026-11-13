@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nateyk\Chapa\Support;
 
 use Nateyk\Chapa\Exceptions\ChapaException;
+use Nateyk\Chapa\Webhooks\WebhookEvent;
 
 final class WebhookVerifier
 {
@@ -43,6 +44,11 @@ final class WebhookVerifier
         }
 
         return $decoded;
+    }
+
+    public function event(string $rawBody, ?string $signature): WebhookEvent
+    {
+        return WebhookEvent::fromArray($this->decode($rawBody, $signature));
     }
 
     /** Hash authenticated bytes to build environment-scoped replay protection in your application. */

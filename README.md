@@ -18,6 +18,8 @@ A **community-maintained**, framework-independent PHP SDK for [Chapa API v2](htt
 - Chapa v2 webhook HMAC-SHA256 verification over the **raw body**
 - Safe payment fulfillment helper that matches `SUCCESS`, amount, currency and merchant reference
 - Laravel config publishing, service container binding, facade and opt-in webhook middleware
+- Immutable typed DTOs for hosted/direct/inline payment requests, payouts, and refunds, plus typed payment/payout/refund verification views (raw arrays still work)
+- Optional encrypted Laravel webhook inbox, replay protection, verified processing, retry/backoff and manual recovery commands
 - PHP 8.2+, no mandatory runtime dependencies beyond `ext-json`
 
 ## Installation
@@ -137,7 +139,7 @@ $chapa->refunds()->create(['payment_reference' => 'CH0Vn2VASWCi'], IdempotencyKe
 $chapa->balances()->get('ETB');
 ```
 
-See [all SDK methods](docs/API.md), [webhook security](docs/SECURITY.md) and [Laravel checkout example](examples/laravel-checkout.php).
+See [all SDK methods](docs/API.md), [webhook security](docs/SECURITY.md), [durable Laravel webhook inbox](docs/WEBHOOK-INBOX.md) and [Laravel checkout example](examples/laravel-checkout.php).
 
 ## Verify Chapa v2 webhooks
 
@@ -152,6 +154,32 @@ Route::post('/chapa/webhook', [YourChapaWebhookController::class, 'handle'])
 ```
 
 In Laravel's `bootstrap/app.php`, exempt **only this webhook path** from CSRF, using the framework's `validateCsrfTokens(except: ['chapa/webhook'])` configuration. Do not exempt arbitrary routes. Use the event's exact raw bytes and check `mode`, payment reference, amount and currency before acting. **Re-verify the payment/payout/refund server-side** and deduplicate deliveries transactionally.
+
+## Typed requests (optional)
+
+```php
+use Nateyk\Chapa\Dto\HostedCheckoutRequest;
+use Nateyk\Chapa\Dto\RefundRequest;
+
+$checkout = $chapa->payments()->hosted(new HostedCheckoutRequest(
+    amount: 10000,
+    currency: 'ETB',
+    merchantReference: 'ORDER123',
+    customer: ['email' => 'buyer@example.com'],
+    returnUrl: 'https://your-store.example/checkout/return',
+), $storedIdempotencyKey);
+
+$verified = $chapa->payments()->verifyTyped('ORDER123');
+if ($verified->matchesPayment(10000, 'ETB', 'ORDER123')) {
+    // Fulfill once, inside your application's business transaction.
+}
+```
+
+The original array-based methods remain supported. Typed verification snapshots reject undocumented response shapes instead of silently assuming a successful payment.
+
+## Durable Laravel webhook inbox (opt-in)
+
+Publish the migration with `php artisan vendor:publish --tag=chapa-migrations`, run `php artisan migrate`, and register the authenticated inbox route explicitly. A scheduled Artisan command reconciles and dispatches stored deliveries; your app remains responsible for idempotent order-level fulfillment. Follow [the complete inbox guide](docs/WEBHOOK-INBOX.md). **The package does not automatically register a public route.**
 
 ## Test
 
@@ -179,6 +207,10 @@ CI tests PHP 8.2, 8.3 and 8.4. No real payments are sent by tests.
 | Lists | Cursor pagination; cursor *request* parameter not specified in published v2 docs |
 
 Docs: [Chapa API v2](https://docs.chapa.global/docs/v2), [webhooks](https://docs.chapa.global/docs/v2/integrations/webhooks), [migration](https://docs.chapa.global/docs/v2/migration).
+
+## Release status and contribution
+
+See [release and Packagist checklist](docs/RELEASE.md), [contribution guide](CONTRIBUTING.md) and [security policy](SECURITY.md). Packagist publishing and real Chapa test-mode integration remain outstanding; do not deploy this pre-release SDK for live funds.
 
 ## License
 

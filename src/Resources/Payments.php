@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Nateyk\Chapa\Resources;
 
 use Nateyk\Chapa\Http\ApiResponse;
+use Nateyk\Chapa\Dto\HostedCheckoutRequest;
+use Nateyk\Chapa\Dto\DirectChargeRequest;
+use Nateyk\Chapa\Dto\InlineChargeRequest;
+use Nateyk\Chapa\Dto\VerifiedTransaction;
 use Nateyk\Chapa\Http\HttpClient;
 use Nateyk\Chapa\Support\RequestValidator as Validate;
 
@@ -15,15 +19,17 @@ final class Payments
     }
 
     /** @param array<string, mixed> $payload */
-    public function hosted(array $payload, string $idempotencyKey): ApiResponse
+    public function hosted(array|HostedCheckoutRequest $payload, string $idempotencyKey): ApiResponse
     {
+        $payload = $payload instanceof HostedCheckoutRequest ? $payload->toArray() : $payload;
         Validate::money($payload);
         return $this->http->request('POST', '/v2/payments/hosted', body: $payload, idempotencyKey: $idempotencyKey);
     }
 
     /** @param array<string, mixed> $payload */
-    public function direct(array $payload, string $idempotencyKey): ApiResponse
+    public function direct(array|DirectChargeRequest $payload, string $idempotencyKey): ApiResponse
     {
+        $payload = $payload instanceof DirectChargeRequest ? $payload->toArray() : $payload;
         Validate::money($payload);
         Validate::nonEmpty($payload, 'payment_method');
         if (!isset($payload['customer']) || !is_array($payload['customer'])) {
@@ -42,8 +48,9 @@ final class Payments
     }
 
     /** This public-key operation is meant for a trusted backend call; never proxy an arbitrary browser payload. */
-    public function inline(array $payload, string $idempotencyKey): ApiResponse
+    public function inline(array|InlineChargeRequest $payload, string $idempotencyKey): ApiResponse
     {
+        $payload = $payload instanceof InlineChargeRequest ? $payload->toArray() : $payload;
         Validate::money($payload);
         Validate::nonEmpty($payload, 'payment_method');
         Validate::nonEmpty($payload, 'mobile');
@@ -61,6 +68,12 @@ final class Payments
     public function verify(string $reference): ApiResponse
     {
         return $this->http->request('GET', '/v2/payments/'.Validate::reference($reference).'/verify');
+    }
+
+    /** Verified, typed payment details; never infer settlement from payment creation. */
+    public function verifyTyped(string $reference): VerifiedTransaction
+    {
+        return VerifiedTransaction::fromResponse($this->verify($reference), 'payment');
     }
 
     public function methods(): ApiResponse

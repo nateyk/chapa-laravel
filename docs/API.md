@@ -1,6 +1,6 @@
 # API v2 method map
 
-Every method returns `Nateyk\Chapa\Http\ApiResponse`. Use `->json()` for the full parsed envelope, `->data()` for the `data` field, and `->operationSucceeded()` **only** for HTTP/API request success (not money movement). Network failures throw `TransportException`; HTTP/API errors throw `ApiException`, with `statusCode` and nullable `errorCode`.
+The existing API methods return `Nateyk\Chapa\Http\ApiResponse` (new `verifyTyped()` methods return typed `VerifiedTransaction` objects). Use `->json()` for the full parsed envelope, `->data()` for the `data` field, and `->operationSucceeded()` **only** for HTTP/API request success (not money movement). Network failures throw `TransportException`; HTTP/API errors throw `ApiException`, with `statusCode` and nullable `errorCode`.
 
 | PHP method | API endpoint | Authentication | Idempotency |
 | --- | --- | --- | --- |
@@ -39,3 +39,17 @@ The SDK deliberately **does not guess** Chapa's undocumented cursor query parame
 - Subaccount operations are not idempotency-cached; use your own deduplication and state locking.
 
 Source of truth: <https://docs.chapa.global/docs/v2>. V1 `transaction/initialize` and `transaction/verify` endpoints are **not** used by this package.
+
+## Typed request and response APIs
+
+The following methods accept DTOs as an alternative to arrays; all require the same explicit idempotency key as before:
+
+- `payments()->hosted(new HostedCheckoutRequest(...), $key)`
+- `payments()->direct(new DirectChargeRequest(...), $key)`
+- `payments()->inline(new InlineChargeRequest(...), $key)`
+- `payouts()->create(new PayoutRequest(...), $key)`
+- `refunds()->create(new RefundRequest(...), $key)`
+
+`payments()->verifyTyped($reference)`, `payouts()->verifyTyped($reference)`, and `refunds()->verifyTyped($refundReference)` return `Nateyk\Chapa\Dto\VerifiedTransaction`. Payment verification supports `matchesPayment($expectedAmountCents, $currency, $merchantReference)`. Refunds deliberately have no inferred `succeeded()` status until a documented final state is confirmed.
+
+For event inbox operation, see [WEBHOOK-INBOX.md](WEBHOOK-INBOX.md).

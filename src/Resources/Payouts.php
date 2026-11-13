@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Nateyk\Chapa\Resources;
 
 use Nateyk\Chapa\Http\ApiResponse;
+use Nateyk\Chapa\Dto\PayoutRequest;
+use Nateyk\Chapa\Dto\VerifiedTransaction;
 use Nateyk\Chapa\Http\HttpClient;
 use Nateyk\Chapa\Support\RequestValidator as Validate;
 
@@ -15,8 +17,9 @@ final class Payouts
     }
 
     /** @param array<string, mixed> $payload */
-    public function create(array $payload, string $idempotencyKey): ApiResponse
+    public function create(array|PayoutRequest $payload, string $idempotencyKey): ApiResponse
     {
+        $payload = $payload instanceof PayoutRequest ? $payload->toArray() : $payload;
         Validate::money($payload, requiresCurrency: false);
         if (!isset($payload['account']) && !isset($payload['account_reference'])) {
             throw new \InvalidArgumentException('Payout requires account or account_reference.');
@@ -56,6 +59,11 @@ final class Payouts
     public function verify(string $reference): ApiResponse
     {
         return $this->http->request('GET', '/v2/payouts/'.Validate::reference($reference).'/verify');
+    }
+
+    public function verifyTyped(string $reference): VerifiedTransaction
+    {
+        return VerifiedTransaction::fromResponse($this->verify($reference), 'payout');
     }
 
     public function banks(?string $country = null): ApiResponse
