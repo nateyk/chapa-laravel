@@ -1,0 +1,40 @@
+{
+  "name": "nateyk/chapa-laravel",
+  "description": "Community-maintained Chapa API v2 PHP SDK with Laravel integration",
+  "type": "library",
+  "license": "MIT",
+  "keywords": ["chapa", "payments", "ethiopia", "laravel", "php", "sdk", "payouts", "refunds"],
+  "homepage": "https://github.com/nateyk/chapa-laravel",
+  "require": {
+    "php": "^8.2",
+    "ext-json": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5 || ^11.0 || ^12.0"
+  },
+  "suggest": {
+    "laravel/framework": "Required for the optional Laravel service provider and facade."
+  },
+  "autoload": {
+    "psr-4": {
+      "Nateyk\\Chapa\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Nateyk\\Chapa\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": ["Nateyk\\Chapa\\Laravel\\ChapaServiceProvider"],
+      "aliases": {"Chapa": "Nateyk\\Chapa\\Laravel\\Facades\\Chapa"}
+    }
+  },
+  "scripts": {
+    "test": ["@php tests/smoke.php", "@php vendor/bin/phpunit"],
+    "lint": "find src tests config -type f -name '*.php' -exec php -l {} \\;"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
