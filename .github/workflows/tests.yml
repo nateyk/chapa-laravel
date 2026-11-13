@@ -30,4 +30,5 @@ jobs:
       - run: find src tests config -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/smoke.php
       - run: php tests/cli-smoke.php
+      - run: php tests/scenarios-smoke.php
       - run: vendor/bin/phpunit --testdox

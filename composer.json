@@ -49,6 +49,7 @@
     "test": [
       "@php tests/smoke.php",
       "@php tests/cli-smoke.php",
+      "@php tests/scenarios-smoke.php",
       "@php vendor/bin/phpunit"
     ],
     "lint": "find src tests config -type f -name '*.php' -exec php -l {} \\;"

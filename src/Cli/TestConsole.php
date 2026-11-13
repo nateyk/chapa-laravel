@@ -33,7 +33,8 @@ final class TestConsole
         if ($args === ['doctor']) {
             return $this->doctor();
         }
-        if ($args !== [] && $args !== ['--check'] && !(count($args) === 1 && str_starts_with($args[0], '--verify-payment='))) {
+        if ($args !== [] && $args !== ['--check'] && $args !== ['--diagnostics=json'] && $args !== ['--diagnostics=text']
+            && !(count($args) === 1 && str_starts_with($args[0], '--verify-payment='))) {
             $this->terminal->line('Unknown option. Run: php bin/chapa test --help');
             return 2;
         }
@@ -53,6 +54,11 @@ final class TestConsole
             return 2;
         }
 
+        if ($args === ['--diagnostics=json'] || $args === ['--diagnostics=text']) {
+            $report = (new ReadOnlyDiagnostics())->run($client, $public !== null);
+            $this->terminal->line($args === ['--diagnostics=json'] ? $report->toJson() : $report->toText());
+            return $report->successful() ? 0 : 1;
+        }
         $this->terminal->line('Chapa API v2 TEST MODE — no live credentials allowed.');
         if ($args === ['--check']) {
             return $this->check($client, $public !== null) ? 0 : 1;
@@ -71,6 +77,8 @@ final class TestConsole
         $this->terminal->line('  php bin/chapa test                     # interactive secure key prompts and menu');
         $this->terminal->line('  php bin/chapa test --check             # read-only test API checks');
         $this->terminal->line('  php bin/chapa test --verify-payment=REF # read-only payment status');
+        $this->terminal->line('  php bin/chapa test --diagnostics=json  # sanitized read-only API report');
+        $this->terminal->line('  php bin/chapa simulate all --json     # offline no-key simulation report');
         $this->terminal->line('Credentials: CHAPA_TEST_SECRET_KEY; optional CHAPA_TEST_PUBLIC_KEY.');
         $this->terminal->line('Never enter keys as command-line arguments or commit them into Git.');
         $this->terminal->line('Only the interactive hosted checkout command can create a test operation.');
@@ -151,6 +159,9 @@ final class TestConsole
             $this->terminal->line('4 Verify payment               5 Recent payments  6 Payouts');
             $this->terminal->line('7 Refunds                      8 Banks            9 Test hosted checkout');
             $this->terminal->line('10 Public-key HTML service      0 Exit');
+            $this->terminal->line('11 Offline direct charge         12 Offline inline charge');
+            $this->terminal->line('13 Payment state matrix          14 Offline webhook replay');
+            $this->terminal->line('15 Offline diagnostics report');
             try {
                 $choice = $this->terminal->read('Select: ');
                 if ($choice === '0') {
@@ -171,7 +182,12 @@ final class TestConsole
                             ? $this->attempt('Public-key HTML service', static fn (): ApiResponse => $client->payments()->htmlStatus())
                             : $this->skipPublic();
                         break;
-                    default: $this->terminal->line('Unknown option. Choose 0-10.'); continue 2;
+                    case '11': $success = $this->offline('direct'); break;
+                    case '12': $success = $this->offline('inline'); break;
+                    case '13': $success = $this->offline('states'); break;
+                    case '14': $success = $this->offline('webhooks'); break;
+                    case '15': $success = $this->offline('all'); break;
+                    default: $this->terminal->line('Unknown option. Choose 0-15.'); continue 2;
                 }
                 $failed = !$success || $failed;
             } catch (\Throwable) {
@@ -179,6 +195,14 @@ final class TestConsole
                 return 2;
             }
         }
+    }
+
+    private function offline(string $scenario): bool
+    {
+        $report = (new OfflineScenarios())->run($scenario);
+        $this->terminal->line($report->toText());
+        $this->terminal->line('OFFLINE ONLY: no Chapa API call or customer wallet prompt was sent.');
+        return $report->successful();
     }
 
     private function skipPublic(): bool

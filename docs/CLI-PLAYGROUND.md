@@ -31,9 +31,14 @@ In Chapa Dashboard, select **Test Mode**, then **Settings → API Keys**. Test k
 | 8 | List payout banks for Ethiopia | GET |
 | 9 | Create a **test** hosted checkout | POST, explicit confirmation required |
 | 10 | Check public-key HTML service | GET |
+| 11 | Offline direct charge | No network |
+| 12 | Offline inline charge | No network |
+| 13 | Payment verification state matrix | No network |
+| 14 | Offline webhook replay | No network |
+| 15 | All offline scenario diagnostics | No network |
 | 0 | Exit | No request |
 
-The CLI intentionally excludes payout creation, direct wallet charges, refunds and destructive operations. Those can affect real recipients or state and should be tested through controlled application workflows, not a general-purpose menu.
+The CLI intentionally excludes **real** payout creation, real direct/inline wallet charges, refunds and destructive operations. Choices 11–15 are **offline-only simulations**; they never contact any wallet or Chapa endpoint.
 
 ### Test hosted checkout
 
@@ -46,7 +51,7 @@ If the API confirms a checkout, the CLI shows an HTTPS checkout URL. Opening tha
 Supply keys with your secret manager or secure interactive shell prompt; do not paste literal keys in commands or scripts:
 
 ```bash
-# Bash on a private development machine
+# Bash / zsh on a private development machine
 read -r -s -p 'Chapa TEST secret: ' CHAPA_TEST_SECRET_KEY; echo
 export CHAPA_TEST_SECRET_KEY
 read -r -s -p 'Chapa TEST public (optional): ' CHAPA_TEST_PUBLIC_KEY; echo
@@ -77,7 +82,7 @@ Unit tests mock the transport and never contact Chapa. The CLI smoke test valida
 
 - A valid key format does not guarantee API authorization; `--check` contacts Chapa and may return 401/403.
 - A successful hosted checkout initialization does not mean payment settlement.
-- The CLI does not run or simulate webhook deliveries. Use dedicated Laravel integration and replay tests for that.
+- The CLI simulates webhook replay **locally** but does not receive real Chapa webhook deliveries. Use Laravel integration and test-mode delivery tests for that.
 - API sandbox checks are not a substitute for production readiness, fraud controls, settlement reconciliation, and merchant account approval.
 
 ## Troubleshooting
@@ -92,3 +97,33 @@ Unit tests mock the transport and never contact Chapa. The CLI smoke test valida
 | Test checkout network error | Outcome might be unknown; do not create a new idempotency key for a retry of that operation. |
 
 Keep test credentials local and rotate them immediately if inadvertently exposed.
+
+## Expanded offline scenarios and diagnostic reports
+
+These commands use **synthetic credentials, in-memory HTTP responses and signed fixtures only**. They never contact Chapa and never prompt customer wallets. No real API keys are required:
+
+```bash
+php bin/chapa simulate all
+php bin/chapa simulate direct
+php bin/chapa simulate inline
+php bin/chapa simulate states
+php bin/chapa simulate webhooks
+php bin/chapa simulate all --json
+```
+
+The `direct` and `inline` simulations exercise real SDK request builders and validate the correct authentication key, `Idempotency-Key`, phone field shape (`customer.phone_number` vs `mobile`), amount in integer cents, non-idempotency-cached validation, and server-side verification requirements. They do **not** send an OTP or charge any phone. The `states` scenario checks `SUCCESS` plus `PENDING`, `FAILED`, `CANCELLED`, `INCOMPLETE`, `BLOCKED`, `AUTH_NEEDED` and rejects mismatched amounts, currency and merchant references.
+
+`webhooks` replays signed fake payment/payout/refund notifications in-memory, verifies exact-byte signature handling and duplicates, and models out-of-order delivery. It does **not** replay against a production webhook URL. See [v2 webhook audit](WEBHOOK-V2-AUDIT.md).
+
+To run **read-only checks against Chapa Test API** with your actual test keys, use the earlier secure environment instructions and then:
+
+```bash
+php bin/chapa test --diagnostics=json
+php bin/chapa test --diagnostics=text
+```
+
+The JSON report uses schema `chapa-sdk-diagnostics/v1` and fields `environment`, `scenario`, `network`, `summary`, and `checks`. It includes **only fixed check identifiers, pass/fail/skip and optional HTTP status codes**. It excludes keys, request/response payloads, phone numbers, customer information, and exception messages. Public-key checks explicitly show `skip` if the test public key is not supplied. Redirect to a private file only if you need to retain a report; check that file's access permissions and never publish reports containing merchant-specific references from other tools.
+
+Within `php bin/chapa test`, menu choices **11–15** now run offline direct, offline inline, payment-state, webhook-replay and full diagnostic scenarios using mocked HTTP. Test secret/public keys are still needed to enter the existing online test menu, but **not** for `php bin/chapa simulate ...`.
+
+Run `php tests/scenarios-smoke.php` for credential-free regression coverage. Tests are also executed by GitHub Actions and `composer test`.

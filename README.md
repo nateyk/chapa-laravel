@@ -38,6 +38,23 @@ For non-interactive API checks use `CHAPA_TEST_SECRET_KEY` and optional `CHAPA_T
 
 Read the [CLI playground guide](docs/CLI-PLAYGROUND.md) for key handling, menu choices, safety and troubleshooting.
 
+## Offline scenario testing and webhook review
+
+The CLI also runs **credential-free, zero-network** simulations. These exercise SDK direct/inline wallet request construction, payment states, signed webhook replay, duplicate deliveries, partial refunds, payout reversals and tampering checks. No real wallet prompts or money movement occur.
+
+```bash
+php bin/chapa simulate all
+php bin/chapa simulate direct
+php bin/chapa simulate inline
+php bin/chapa simulate states
+php bin/chapa simulate webhooks
+php bin/chapa simulate all --json
+```
+
+For actual **read-only Chapa Test API** checks, securely provide the test keys as described in the CLI guide, then run `php bin/chapa test --diagnostics=json`. The report is redacted and never includes keys, raw responses or customer information. Interactive test-menu options 11–15 also launch the offline scenarios.
+
+Read [CLI playground](docs/CLI-PLAYGROUND.md) and the [deep v2 webhook review](docs/WEBHOOK-V2-AUDIT.md) for supported events, strict event/status validation, idempotency, signature rules and reconciliation responsibilities.
+
 ## Installation
 
 When published to Packagist, install using:
