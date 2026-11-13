@@ -57,7 +57,7 @@ final class ChapaClientTest extends TestCase
         self::assertTrue($this->client->webhooks()->verify($body, $signature));
         self::assertFalse($this->client->webhooks()->verify($body.' ', $signature));
 
-        $this->transport->responses[] = new RawResponse(200, '{"status":"success","data":{"status":"SUCCESS","amount":10000,"currency":"ETB","merchant_reference":"ORDER1"}}');
+        $this->transport->responses[] = new RawResponse(200, '{"status":"success","data":{"status":"SUCCESS","chapa_reference":"CH1","amount":10000,"currency":"ETB","merchant_reference":"ORDER1"}}');
         $verification = $this->client->payments()->verify('CH1');
         self::assertTrue(PaymentVerifier::matches($verification, 10000, 'ETB', 'ORDER1'));
         self::assertFalse(PaymentVerifier::matches($verification, 10000, 'ETB', 'OTHER'));

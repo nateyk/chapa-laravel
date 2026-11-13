@@ -53,6 +53,18 @@ final class DtoTest extends TestCase
         self::assertFalse($result->matchesPayment(10000, 'ETB', 'ORDER2'));
     }
 
+    public function testMissingChapaReferenceIsRejectedFailClosed(): void
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        VerifiedTransaction::fromResponse(new ApiResponse(200, [
+            'status' => 'success',
+            'data' => [
+                'merchant_reference' => 'ORDER1',
+                'amount' => 10000, 'currency' => 'ETB', 'status' => 'SUCCESS',
+            ],
+        ]), 'payment');
+    }
+
     public function testRequestRejectsUnsecuredCallbackUrl(): void
     {
         $this->expectException(\InvalidArgumentException::class);

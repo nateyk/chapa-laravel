@@ -69,7 +69,7 @@ $check(!$chapa->webhooks()->verify($raw.' ', $sig), 'Webhook tamper detection');
 $check(!$chapa->webhooks()->verify($raw, ''), 'Webhook missing signature');
 $check($chapa->webhooks()->decode($raw, $sig)['event'] === 'payment.success', 'Webhook decode');
 $throws(static fn () => $chapa->webhooks()->decode($raw, str_repeat('0', 64)), \Nateyk\Chapa\Exceptions\ChapaException::class);
-$transport->responses[] = new RawResponse(200, '{"status":"success","data":{"status":"SUCCESS","amount":10000,"currency":"ETB","merchant_reference":"order-101"}}');
+$transport->responses[] = new RawResponse(200, '{"status":"success","data":{"status":"SUCCESS","chapa_reference":"CH0abc","amount":10000,"currency":"ETB","merchant_reference":"order-101"}}');
 $verified = $chapa->payments()->verify('CH0abc');
 $check(PaymentVerifier::matches($verified, 10000, 'ETB', 'order-101'), 'Verification matches order');
 $check(!PaymentVerifier::matches($verified, 10001, 'ETB', 'order-101'), 'Verification rejects amount mismatch');
