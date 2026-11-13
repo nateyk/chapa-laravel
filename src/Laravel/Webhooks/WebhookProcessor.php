@@ -11,6 +11,7 @@ use Nateyk\Chapa\ChapaClient;
 use Nateyk\Chapa\Dto\VerifiedTransaction;
 use Nateyk\Chapa\Laravel\Events\ChapaWebhookProcessed;
 use Nateyk\Chapa\Webhooks\WebhookEvent;
+use Nateyk\Chapa\Webhooks\WebhookConsistency;
 
 /** Lease-based, retryable inbox processor; never calls an API while holding a database lock. */
 final class WebhookProcessor
@@ -133,6 +134,9 @@ final class WebhookProcessor
             && !$verified->succeeded()) {
             throw new \RuntimeException('Chapa reported success but verification is not yet final.');
         }
+        // Do not dispatch contradictory terminal notifications to application listeners.
+        // Chapa server-side verification is authoritative; failed attempts are retried.
+        WebhookConsistency::assertCurrent($event, $verified);
         return $verified;
     }
 }

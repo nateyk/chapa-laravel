@@ -29,6 +29,23 @@ $arguments = array_slice($argv, 1);
 if ($arguments === [] || in_array($arguments[0], ['--help', '-h', 'help'], true)) {
     exit((new TestConsole())->run(['--help']));
 }
+if ($arguments[0] === 'simulate') {
+    $options = array_slice($arguments, 1);
+    if (count($options) > 2 || count(array_filter($options, static fn ($arg): bool => $arg === '--json')) > 1) {
+        fwrite(STDERR, "Usage: php bin/chapa simulate [all|direct|inline|states|webhooks] [--json]\n");
+        exit(2);
+    }
+    $json = in_array('--json', $options, true);
+    $names = array_values(array_filter($options, static fn (string $arg): bool => $arg !== '--json'));
+    $name = $names[0] ?? 'all';
+    if (count($names) > 1 || !in_array($name, ['all', 'direct', 'inline', 'states', 'webhooks'], true)) {
+        fwrite(STDERR, "Unknown simulation. Use: all, direct, inline, states or webhooks.\n");
+        exit(2);
+    }
+    $report = (new \Nateyk\Chapa\Cli\OfflineScenarios())->run($name);
+    fwrite(STDOUT, ($json ? $report->toJson() : $report->toText())."\n");
+    exit($report->successful() ? 0 : 1);
+}
 if ($arguments[0] === 'doctor') {
     exit((new TestConsole())->run(['doctor']));
 }

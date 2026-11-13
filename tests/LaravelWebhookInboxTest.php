@@ -78,6 +78,20 @@ final class LaravelWebhookInboxTest extends TestCase
         self::assertCount(1, $mock->requests);
     }
 
+    public function testStaleFailureCannotDispatchAfterSuccessWasVerified(): void
+    {
+        $mock = new MockTransport();
+        $mock->responses[] = new RawResponse(200, '{"status":"success","data":{"status":"SUCCESS","chapa_reference":"CH123","merchant_reference":"ORDER1","amount":10000,"currency":"ETB"}}');
+        $this->app->instance(ChapaClient::class, new ChapaClient('private', 'public', 'webhook-secret', $mock));
+        Event::fake([ChapaWebhookProcessed::class]);
+        $raw = '{"webhook_type":"payment","event":"payment.failed","status":"failed","mode":"test","chapa_reference":"CH123","merchant_reference":"ORDER1","amount":"10000","currency":"ETB"}';
+        $receipt = $this->app->make(WebhookInbox::class)->accept($raw, hash_hmac('sha256', $raw, 'webhook-secret'));
+        self::assertFalse($this->app->make(WebhookProcessor::class)->process($receipt->receiptId));
+        Event::assertNotDispatched(ChapaWebhookProcessed::class);
+        self::assertSame('failed', DB::table('chapa_webhook_receipts')->where('id', $receipt->receiptId)->value('state'));
+        self::assertCount(1, $mock->requests);
+    }
+
     public function testRefundWebhookDoesNotGuessRefundReference(): void
     {
         $body = '{"webhook_type":"refund","event":"payment.partially_refunded","status":"partially_refunded","mode":"test","chapa_reference":"CH123","amount":"10000","refunded_amount":"5000","currency":"ETB"}';
