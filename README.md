@@ -22,6 +22,22 @@ A **community-maintained**, framework-independent PHP SDK for [Chapa API v2](htt
 - Optional encrypted Laravel webhook inbox, replay protection, verified processing, retry/backoff and manual recovery commands
 - PHP 8.2+, no mandatory runtime dependencies beyond `ext-json`
 
+## Test-mode CLI playground
+
+You can test the SDK **directly from this repository** using your own Chapa Test secret and optional Test public key. Keys are securely prompted, not persisted or passed as CLI arguments. Live-mode keys are refused.
+
+```bash
+php bin/chapa doctor      # Offline PHP environment checks
+php bin/chapa test        # Secure hidden key prompts; interactive test menu
+php bin/chapa test --help # Available commands
+```
+
+The menu supports API key checks, methods, balances, verification, recent payments/payouts/refunds, banks and public-key checkout health. Creating a **simulated** hosted checkout requires an explicit `CREATE TEST CHECKOUT` confirmation.
+
+For non-interactive API checks use `CHAPA_TEST_SECRET_KEY` and optional `CHAPA_TEST_PUBLIC_KEY` from your secret manager and run `php bin/chapa test --check`. For fully offline tests run `php tests/cli-smoke.php`.
+
+Read the [CLI playground guide](docs/CLI-PLAYGROUND.md) for key handling, menu choices, safety and troubleshooting.
+
 ## Installation
 
 When published to Packagist, install using:

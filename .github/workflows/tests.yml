@@ -29,4 +29,5 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: find src tests config -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/smoke.php
+      - run: php tests/cli-smoke.php
       - run: vendor/bin/phpunit --testdox

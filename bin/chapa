@@ -1,0 +1,39 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Runnable directly from a repository clone, without mandatory Composer installation.
+$autoload = __DIR__.'/../vendor/autoload.php';
+if (!is_file($autoload)) {
+    $autoload = dirname(__DIR__, 3).'/autoload.php'; // Installed under vendor/<owner>/<package>/bin.
+}
+if (is_file($autoload)) {
+    require $autoload;
+} else {
+    spl_autoload_register(static function (string $name): void {
+        $prefix = 'Nateyk\\Chapa\\';
+        if (!str_starts_with($name, $prefix)) {
+            return;
+        }
+        $filename = __DIR__.'/../src/'.str_replace('\\', '/', substr($name, strlen($prefix))).'.php';
+        if (is_file($filename)) {
+            require $filename;
+        }
+    });
+}
+
+use Nateyk\Chapa\Cli\TestConsole;
+
+$arguments = array_slice($argv, 1);
+if ($arguments === [] || in_array($arguments[0], ['--help', '-h', 'help'], true)) {
+    exit((new TestConsole())->run(['--help']));
+}
+if ($arguments[0] === 'doctor') {
+    exit((new TestConsole())->run(['doctor']));
+}
+if ($arguments[0] !== 'test') {
+    fwrite(STDERR, "Unknown command. Run: php bin/chapa --help\n");
+    exit(2);
+}
+exit((new TestConsole())->run(array_slice($arguments, 1)));

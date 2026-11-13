@@ -48,6 +48,7 @@
   "scripts": {
     "test": [
       "@php tests/smoke.php",
+      "@php tests/cli-smoke.php",
       "@php vendor/bin/phpunit"
     ],
     "lint": "find src tests config -type f -name '*.php' -exec php -l {} \\;"
@@ -57,5 +58,8 @@
   "support": {
     "issues": "https://github.com/nateyk/chapa-laravel/issues",
     "source": "https://github.com/nateyk/chapa-laravel"
-  }
+  },
+  "bin": [
+    "bin/chapa"
+  ]
 }
