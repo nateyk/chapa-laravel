@@ -51,9 +51,11 @@ final class WebhookStateGuard
         // settlement transition. A late OTP/authorization/failure event needs
         // review rather than replacing success in the application's ledger.
         if ($incoming->type === 'payout'
-            && $previous->signalsSuccessfulPayout()
-            && $incoming->name !== 'payout.reversed'
-            && !$incoming->signalsSuccessfulPayout()) {
+            && (($previous->signalsSuccessfulPayout()
+                && $incoming->name !== 'payout.reversed'
+                && !$incoming->signalsSuccessfulPayout())
+                || ($previous->name === 'payout.reversed'
+                    && $incoming->name !== 'payout.reversed'))) {
             return self::REVIEW;
         }
         // Payout reversals after success are valid and should not be discarded.
