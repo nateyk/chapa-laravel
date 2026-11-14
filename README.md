@@ -9,7 +9,7 @@ A **community-maintained**, framework-independent PHP SDK for [Chapa API v2](htt
 ## Features
 
 - Hosted checkout, direct wallet charge + validation, inline wallet charge + validation (public key), payment methods, payment verification, list payments, HTML service check
-- Single, bulk, and merchant-to-merchant payouts; payout verification, bank list and payout list
+- Single, bulk, and merchant-to-merchant payouts; payout verification, bank list and payout list; typed payout lifecycle and destination validation
 - Full/partial refunds, refund verification and refund list
 - Split payment recipient (subaccount) create/list/update
 - Multi-currency balances
@@ -53,7 +53,7 @@ php bin/chapa simulate all --json
 
 For actual **read-only Chapa Test API** checks, securely provide the test keys as described in the CLI guide, then run `php bin/chapa test --diagnostics=json`. The report is redacted and never includes keys, raw responses or customer information. Interactive test-menu options 11–15 also launch the offline scenarios.
 
-Read [CLI playground](docs/CLI-PLAYGROUND.md) and the [deep v2 webhook review](docs/WEBHOOK-V2-AUDIT.md) for supported events, strict event/status validation, idempotency, signature rules and reconciliation responsibilities.
+Read [CLI playground](docs/CLI-PLAYGROUND.md), [Payout v2 authorization and lifecycle](docs/PAYOUT-V2.md), and the [deep v2 webhook review](docs/WEBHOOK-V2-AUDIT.md) for supported events, strict event/status validation, idempotency, signature rules and reconciliation responsibilities.
 
 ## Installation
 

@@ -140,6 +140,34 @@ final class CliTest extends TestCase
         self::assertStringContainsString('do not fulfill', $terminal->output());
     }
 
+    public function testReadOnlyPayoutVerificationExplainsAuthorizationWithoutGuessingUrl(): void
+    {
+        foreach (['AUTH_NEEDED', 'OTP_NEEDED', 'SUCCESS', 'REVERSED'] as $status) {
+            $terminal = new CliFakeTerminal(false);
+            $transport = new MockTransport();
+            $transport->responses[] = new RawResponse(200, json_encode([
+                'status' => 'success',
+                'data' => [
+                    'status' => $status, 'chapa_reference' => 'CP_T_1234',
+                    'merchant_reference' => 'payout-101',
+                    'amount' => 10000, 'currency' => 'ETB',
+                    'account' => ['account_name' => 'Private Recipient'],
+                ],
+            ], JSON_THROW_ON_ERROR));
+            self::assertSame(0, $this->console($terminal, $transport, [
+                'CHAPA_TEST_SECRET_KEY' => 'CHAPA_TEST_secret',
+            ])->run(['--verify-payout=CP_T_1234']));
+            self::assertCount(1, $transport->requests);
+            self::assertSame('GET', $transport->requests[0]['method']);
+            self::assertStringNotContainsString('Private Recipient', $terminal->output());
+            self::assertStringNotContainsString('CHAPA_TEST_secret', $terminal->output());
+            self::assertStringContainsString($status, $terminal->output());
+            if (in_array($status, ['AUTH_NEEDED', 'OTP_NEEDED'], true)) {
+                self::assertStringContainsString('does not document an approval URL', $terminal->output());
+            }
+        }
+    }
+
     public function testCommandLineRejectsUnknownOptionsBeforeNetwork(): void
     {
         $terminal = new CliFakeTerminal(false);

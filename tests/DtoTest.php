@@ -23,7 +23,7 @@ final class DtoTest extends TestCase
         $client->payments()->hosted(new HostedCheckoutRequest(10000, 'ETB', 'ORDER1', ['email' => 'buyer@example.org']), 'k1');
         $client->payments()->direct(new DirectChargeRequest(10000, 'ETB', 'telebirr', '251911000000'), 'k2');
         $client->payments()->inline(new InlineChargeRequest(10000, 'ETB', 'telebirr', '251911000000'), 'k3');
-        $client->payouts()->create(new PayoutRequest(10000, 'ETB', ['bank_slug' => 'telebirr']), 'k4');
+        $client->payouts()->create(new PayoutRequest(10000, 'ETB', ['account_number' => '251900000000', 'account_name' => 'Synthetic User', 'bank_slug' => 'telebirr']), 'k4');
         $client->refunds()->create(new RefundRequest('CH123', 1000), 'k5');
 
         self::assertCount(5, $transport->requests);

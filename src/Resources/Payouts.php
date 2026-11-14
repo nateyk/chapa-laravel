@@ -6,6 +6,7 @@ namespace Nateyk\Chapa\Resources;
 
 use Nateyk\Chapa\Http\ApiResponse;
 use Nateyk\Chapa\Dto\PayoutRequest;
+use Nateyk\Chapa\Dto\PayoutInitiation;
 use Nateyk\Chapa\Dto\VerifiedTransaction;
 use Nateyk\Chapa\Http\HttpClient;
 use Nateyk\Chapa\Support\RequestValidator as Validate;
@@ -21,10 +22,14 @@ final class Payouts
     {
         $payload = $payload instanceof PayoutRequest ? $payload->toArray() : $payload;
         Validate::money($payload, requiresCurrency: false);
-        if (!isset($payload['account']) && !isset($payload['account_reference'])) {
-            throw new \InvalidArgumentException('Payout requires account or account_reference.');
-        }
+        Validate::payoutDestination($payload);
         return $this->http->request('POST', '/v2/payouts', body: $payload, idempotencyKey: $idempotencyKey);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createTyped(array|PayoutRequest $payload, string $idempotencyKey): PayoutInitiation
+    {
+        return PayoutInitiation::fromResponse($this->create($payload, $idempotencyKey));
     }
 
     /** @param array<string, mixed> $payload */
@@ -41,9 +46,7 @@ final class Payouts
                 throw new \InvalidArgumentException('Each payout item must be an object.');
             }
             Validate::money($item, requiresCurrency: !isset($payload['currency']));
-            if (!isset($item['account']) && !isset($item['account_reference'])) {
-                throw new \InvalidArgumentException('Each payout item requires an account or account_reference.');
-            }
+            Validate::payoutDestination($item);
         }
         return $this->http->request('POST', '/v2/payouts/bulk', body: $payload, idempotencyKey: $idempotencyKey);
     }

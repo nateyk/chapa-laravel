@@ -17,6 +17,7 @@ final readonly class PayoutRequest implements RequestPayload
         public ?string $accountReference = null,
         public ?string $merchantReference = null,
         public array $meta = [],
+        public ?string $reason = null,
     ) {
         if ($amount < 100) {
             throw new \InvalidArgumentException('Payout amount must be at least 100 cents.');
@@ -27,9 +28,7 @@ final readonly class PayoutRequest implements RequestPayload
         if ($merchantReference !== null) {
             RequestValidator::merchantReference(['merchant_reference' => $merchantReference]);
         }
-        if (($account === null || $account === []) && ($accountReference === null || trim($accountReference) === '')) {
-            throw new \InvalidArgumentException('Account or accountReference is required.');
-        }
+        RequestValidator::payoutDestination($this->toArray());
     }
 
     public function toArray(): array
@@ -41,6 +40,7 @@ final readonly class PayoutRequest implements RequestPayload
             'account_reference' => $this->accountReference,
             'merchant_reference' => $this->merchantReference,
             'meta' => $this->meta,
+            'reason' => $this->reason,
         ]);
     }
 }
