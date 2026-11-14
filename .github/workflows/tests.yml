@@ -53,5 +53,21 @@ jobs:
           tools: composer:v2
           coverage: none
       - run: composer require --dev "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-      - run: composer update --no-interaction --prefer-dist --no-progress
+      # Composer currently blocks all Laravel 11.x releases due to published advisories.
+      # The override is confined to this throwaway compatibility job; never use it
+      # in production install, release, or the main PHP SDK matrix.
+      - name: Resolve Laravel 11 compatibility dependencies only (advisory override)
+        if: matrix.laravel == '11.*'
+        run: composer update --no-interaction --prefer-dist --no-progress --no-security-blocking
+      - name: Resolve Laravel 12 / 13 normally
+        if: matrix.laravel != '11.*'
+        run: composer update --no-interaction --prefer-dist --no-progress
+      - name: Report Laravel 11 dependency advisories (release blocker)
+        if: matrix.laravel == '11.*'
+        run: |
+          if composer audit --no-interaction; then
+            echo "Laravel 11 compatibility dependencies have no active advisories."
+          else
+            echo "::warning::Laravel 11 dependencies have known security advisories. This isolated job tests compatibility ONLY; do not use this SDK with those versions for production without a separate security review."
+          fi
       - run: vendor/bin/phpunit --testdox

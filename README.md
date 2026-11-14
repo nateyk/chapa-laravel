@@ -74,6 +74,10 @@ The new **test-only signature probe** always rejects callbacks, logs only fixed 
 
 See [Transfer Approval URL and admin workflow](docs/TRANSFER-APPROVAL.md), [illustrative protected admin routes](examples/laravel-transfer-admin.php), and [sample admin dashboard Blade view](examples/laravel-admin-chapa-transfer-requests.blade.php).
 
+### Laravel compatibility security note
+
+The CI matrix now explicitly tests Laravel 11, 12 and 13. Composer currently blocks **all published Laravel 11 versions** due to security advisories; its isolated compatibility job uses a temporary audit override with a visible warning, but **normal SDK and production installs do not bypass security policy**. Laravel 11 API compatibility is not a production-safety certification. See [release gates](docs/RELEASE.md).
+
 ## Installation
 
 When published to Packagist, install using:

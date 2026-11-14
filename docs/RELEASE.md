@@ -12,6 +12,12 @@ This is a **community-maintained** Chapa API v2 package and is not affiliated wi
 6. Review security, exception messages, logging, operations keys, migration rollback and customer data retention; document release-breaking changes in `CHANGELOG.md`.
 7. Publish a **pre-release** tag first (`v0.1.0`) after these checks; use SemVer for subsequent versions. Prefer a signed annotated tag and GitHub Release notes.
 
+## Laravel 11 compatibility versus security
+
+The CI matrix includes Laravel 11, 12 and 13. **As of 14 November 2026**, Composer's security-policy resolver blocks all currently available Laravel 11 releases due to published security advisories. The Laravel 11 matrix job temporarily bypasses dependency blocking **inside that isolated CI container only** to test API compatibility, and reports advisories as a release warning. This is not a safe-production certification. The package itself does **not** disable Composer's policy, and normal installations retain secure defaults.
+
+Treat Laravel 11 as a **separate security release blocker** until upstream packages and advisory exposure have been reviewed. Laravel 12 and 13 CI jobs resolve dependencies without this override. Never copy the Laravel 11 compatibility-only workaround into your deployment pipeline or use its green test result as proof that the dependency set is safe.
+
 ## Outstanding transfer approval interoperability gates
 
 - [ ] Chapa confirms whether **API v2** payouts trigger the dashboard Transfer Approval URL.
