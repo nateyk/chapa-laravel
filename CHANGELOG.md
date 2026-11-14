@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added opt-in merchant-admin transfer approval flow with an encrypted approval ledger, requester/approver separation, protected idempotent dispatch and no automatic public route.
+- Added fail-closed Transfer Approval URL signature verification, exact amount/destination checks and synchronous 200/400 response.
+- Added test-only approval signature smoke checks, offline CLI simulation, Laravel Testbench request/decision/dispatch coverage and integration docs.
+- Approval URL uses Chapa's legacy v1 callback contract; v2 support and signature canonicalization require Chapa test-mode validation.
+
 - Added credential-free direct/inline payment simulations, payment-state matrix, and signed webhook replay CLI.
 - Added sanitized machine-readable read-only Chapa Test API diagnostics.
 - Hardened documented webhook event/status validation and fail-closed server verification consistency.

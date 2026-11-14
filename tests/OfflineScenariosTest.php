@@ -18,7 +18,7 @@ final class OfflineScenariosTest extends TestCase
     public function testEveryOfflineScenarioAndJsonReport(): void
     {
         $runner = new OfflineScenarios();
-        foreach (['direct', 'inline', 'states', 'webhooks', 'all'] as $name) {
+        foreach (['direct', 'inline', 'states', 'webhooks', 'approvals', 'all'] as $name) {
             $report = $runner->run($name);
             self::assertTrue($report->successful(), $name);
             $document = json_decode($report->toJson(), true, flags: JSON_THROW_ON_ERROR);

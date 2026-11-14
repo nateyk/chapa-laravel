@@ -8,6 +8,13 @@ return [
     'webhook_secret' => env('CHAPA_WEBHOOK_SECRET'),
     'base_url' => env('CHAPA_BASE_URL', 'https://api.chapa.global'),
     'timeout' => (int) env('CHAPA_TIMEOUT', 15),
+    // Opt-in legacy transfer approval callback; do NOT enable until Chapa v2 compatibility is confirmed.
+    'transfer_approval' => [
+        'enabled' => filter_var(env('CHAPA_TRANSFER_APPROVAL_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'secret' => env('CHAPA_TRANSFER_APPROVAL_SECRET'),
+        'mode' => env('CHAPA_TRANSFER_APPROVAL_MODE', 'test'),
+        'integration' => env('CHAPA_TRANSFER_APPROVAL_INTEGRATION', 'default'),
+    ],
     'webhook_inbox' => [
         'mode' => env('CHAPA_MODE', 'test'),
         'integration' => env('CHAPA_WEBHOOK_INTEGRATION', 'default'),

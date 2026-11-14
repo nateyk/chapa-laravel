@@ -8,12 +8,14 @@ use Nateyk\Chapa\ChapaClient;
 use Nateyk\Chapa\Http\ApiResponse;
 use Nateyk\Chapa\Http\RawResponse;
 use Nateyk\Chapa\Support\PaymentVerifier;
+use Nateyk\Chapa\Transfers\ApprovalCallback;
+use Nateyk\Chapa\Transfers\ApprovalSignature;
 
 /** No user credentials, real wallets, external HTTP or webhooks. All inputs are synthetic. */
 final class OfflineScenarios
 {
     /** @var list<string> */
-    public const NAMES = ['direct', 'inline', 'states', 'webhooks'];
+    public const NAMES = ['direct', 'inline', 'states', 'webhooks', 'approvals'];
 
     public function run(string $scenario = 'all'): DiagnosticReport
     {
@@ -128,6 +130,27 @@ final class OfflineScenarios
         $report->add('webhooks.invalid_status_rejected', $harness->receive(array_replace($base, [
             'event' => 'payment.success', 'status' => 'failed',
         ])) === 'rejected_signature_or_payload');
+    }
+
+    /** No Laravel, database, keys or network: only synthetic approval callback behavior. */
+    private function approvals(DiagnosticReport $report): void
+    {
+        $secret = 'SYNTHETIC_TRANSFER_APPROVAL_SECRET_ONLY';
+        $body = json_encode([
+            'amount' => '100.00', 'reference' => 'SIMPAYOUT1',
+            'bank' => 'telebirr', 'account_name' => 'Synthetic Person',
+            'account_number' => '0000001234',
+        ], JSON_THROW_ON_ERROR);
+        $signature = hash_hmac('sha256', $body, $secret);
+        $verifier = new ApprovalSignature($secret);
+        $report->add('approvals.raw_hmac_valid', $verifier->verify($body, $signature));
+        $report->add('approvals.tampering_rejected', !$verifier->verify($body.' ', $signature));
+        $report->add('approvals.no_signature_rejected', !$verifier->verify($body, null));
+        $details = ApprovalCallback::fromRawBody($body);
+        $report->add('approvals.decimal_to_cents', $details->amountCents === 10000);
+        $report->add('approvals.reference_preserved', $details->reference === 'SIMPAYOUT1');
+        $report->add('approvals.account_zeroes_preserved', $details->accountNumber === '0000001234');
+        // Laravel's database-backed authorization and 200/400 controller are tested by Testbench.
     }
 
     /** @param array<string,mixed> $data */

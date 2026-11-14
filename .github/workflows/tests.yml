@@ -27,8 +27,9 @@ jobs:
           coverage: none
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist --no-progress
-      - run: find src tests config -name '*.php' -print0 | xargs -0 -n1 php -l
+      - run: find src tests config database/migrations examples -name '*.php' -print0 | xargs -0 -n1 php -l
       - run: php tests/smoke.php
       - run: php tests/cli-smoke.php
       - run: php tests/scenarios-smoke.php
+      - run: php tests/approval-smoke.php
       - run: vendor/bin/phpunit --testdox

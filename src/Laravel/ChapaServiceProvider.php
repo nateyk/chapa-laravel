@@ -10,6 +10,8 @@ use Nateyk\Chapa\Laravel\Webhooks\WebhookInbox;
 use Nateyk\Chapa\Laravel\Webhooks\WebhookProcessor;
 use Nateyk\Chapa\Laravel\Console\ProcessChapaWebhooks;
 use Nateyk\Chapa\Laravel\Console\RetryChapaWebhook;
+use Nateyk\Chapa\Laravel\Transfers\TransferApprovalManager;
+use Nateyk\Chapa\Laravel\Transfers\TransferApprovalGate;
 
 final class ChapaServiceProvider extends ServiceProvider
 {
@@ -32,6 +34,8 @@ final class ChapaServiceProvider extends ServiceProvider
         $this->app->alias(ChapaClient::class, 'chapa');
         $this->app->singleton(WebhookInbox::class);
         $this->app->singleton(WebhookProcessor::class);
+        $this->app->singleton(TransferApprovalManager::class);
+        $this->app->singleton(TransferApprovalGate::class);
     }
 
     public function boot(): void
