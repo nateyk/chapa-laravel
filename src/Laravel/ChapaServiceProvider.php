@@ -10,6 +10,7 @@ use Nateyk\Chapa\Laravel\Webhooks\WebhookInbox;
 use Nateyk\Chapa\Laravel\Webhooks\WebhookProcessor;
 use Nateyk\Chapa\Laravel\Console\ProcessChapaWebhooks;
 use Nateyk\Chapa\Laravel\Console\RetryChapaWebhook;
+use Nateyk\Chapa\Laravel\Console\ChapaDoctor;
 use Nateyk\Chapa\Laravel\Transfers\TransferApprovalManager;
 use Nateyk\Chapa\Laravel\Transfers\TransferApprovalGate;
 
@@ -47,7 +48,7 @@ final class ChapaServiceProvider extends ServiceProvider
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'chapa-migrations');
         if ($this->app->runningInConsole()) {
-            $this->commands([ProcessChapaWebhooks::class, RetryChapaWebhook::class]);
+            $this->commands([ProcessChapaWebhooks::class, RetryChapaWebhook::class, ChapaDoctor::class]);
         }
     }
 }
