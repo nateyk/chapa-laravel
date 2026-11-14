@@ -100,7 +100,7 @@ final class CliTest extends TestCase
     {
         $terminal = new CliFakeTerminal(true, ['9', '150', 'CREATE TEST CHECKOUT', '0']);
         $transport = new MockTransport();
-        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"checkout_url":"https://checkout.chapa.co/test-123"}}');
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"checkout_url":"https://checkout.chapa.global/test-123"}}');
         self::assertSame(0, $this->console($terminal, $transport, [
             'CHAPA_TEST_SECRET_KEY' => 'CHAPA_TEST_secret',
         ])->run([]));
@@ -112,7 +112,21 @@ final class CliTest extends TestCase
         self::assertSame(150, $body['amount']);
         self::assertSame('ETB', $body['currency']);
         self::assertLessThanOrEqual(20, strlen($body['merchant_reference']));
-        self::assertStringContainsString('https://checkout.chapa.co/test-123', $terminal->output());
+        self::assertStringContainsString('https://checkout.chapa.global/test-123', $terminal->output());
+    }
+
+    public function testInteractiveCheckoutRejectsUntrustedRedirectWithoutLeakingUrl(): void
+    {
+        $terminal = new CliFakeTerminal(true, ['9', '150', 'CREATE TEST CHECKOUT', '0']);
+        $transport = new MockTransport();
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"checkout_url":"https://phishing.example/redirect-me"}}');
+        self::assertSame(1, $this->console($terminal, $transport, [
+            'CHAPA_TEST_SECRET_KEY' => 'CHAPA_TEST_secret',
+        ])->run([]));
+        self::assertCount(1, $transport->requests);
+        self::assertStringNotContainsString('phishing.example', $terminal->output());
+        self::assertStringNotContainsString('redirect-me', $terminal->output());
+        self::assertStringContainsString('outcome unknown', $terminal->output());
     }
 
     public function testInvalidCheckoutAmountNeverSendsRequest(): void

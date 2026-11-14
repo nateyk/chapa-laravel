@@ -62,7 +62,7 @@ $check(count($transport->requests) === 0, 'No POST without confirmation');
 
 $io = new CliSmokeTerminal(true, ['9', '150', 'CREATE TEST CHECKOUT', '0']);
 $transport = new MockTransport();
-$transport->responses[] = new RawResponse(200, '{"status":"success","data":{"checkout_url":"https://checkout.chapa.co/test-123"}}');
+$transport->responses[] = new RawResponse(200, '{"status":"success","data":{"checkout_url":"https://checkout.chapa.global/test-123"}}');
 $check($make($io, $transport, ['CHAPA_TEST_SECRET_KEY' => 'CHAPA_TEST_secret'])->run([]) === 0, 'Confirmed simulated checkout');
 $check(count($transport->requests) === 1, 'Only one POST');
 $check($transport->requests[0]['method'] === 'POST', 'Hosted checkout request');
