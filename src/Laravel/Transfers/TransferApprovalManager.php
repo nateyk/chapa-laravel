@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Nateyk\Chapa\ChapaClient;
 use Nateyk\Chapa\Dto\PayoutInitiation;
 use Nateyk\Chapa\Dto\PayoutRequest;
+use Nateyk\Chapa\Dto\VerifiedTransaction;
 use Nateyk\Chapa\Support\IdempotencyKey;
 use Nateyk\Chapa\Support\RequestValidator;
 
@@ -166,6 +167,44 @@ final class TransferApprovalManager
             ]);
             throw $exception;
         }
+    }
+
+    /**
+     * Read-only reconciliation for submitted and ambiguous payout attempts.
+     * Host must authorize this call. Never re-POSTs, changes money state, or
+     * treats the creation receipt as settlement. If references or amounts
+     * differ, fail closed so an operator can investigate.
+     */
+    public function verifySubmitted(string $merchantReference): VerifiedTransaction
+    {
+        $this->assertEnabled();
+        [$integration, $mode] = $this->scope();
+
+        $record = DB::table('chapa_transfer_approvals')
+            ->where('integration', $integration)->where('mode', $mode)
+            ->where('merchant_reference', $merchantReference)
+            ->whereIn('state', ['sending', 'submitted', 'unknown'])
+            ->whereNotNull('approved_at')
+            ->first();
+
+        if ($record === null) {
+            throw new \LogicException('Only a previously approved and dispatched payout may be reconciled.');
+        }
+
+        $reference = is_string($record->chapa_reference) && $record->chapa_reference !== ''
+            ? $record->chapa_reference : $merchantReference;
+        $verified = $this->chapa->payouts()->verifyTyped($reference);
+
+        if ($verified->merchantReference !== $record->merchant_reference
+            || $verified->amount !== (int) $record->amount_cents
+            || $verified->currency !== $record->currency
+            || ($record->chapa_reference !== null
+                && $record->chapa_reference !== $verified->chapaReference)
+            || $verified->payoutStatus() === null) {
+            throw new \UnexpectedValueException('Chapa payout verification does not match the approved transfer.');
+        }
+
+        return $verified;
     }
 
     /** @return array{string, string} */
