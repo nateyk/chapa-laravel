@@ -31,6 +31,8 @@ final class ReleaseReadiness
             'LICENSE', 'SECURITY.md', '.github/workflows/tests.yml',
             'docs/RELEASE.md', 'docs/TRANSFER-APPROVAL.md',
             'docs/PAYOUT-V2.md', 'src/Laravel/ChapaServiceProvider.php',
+            'docs/LARAVEL-11-SECURITY.md', 'docs/CHAPA-CALLBACK-COMPATIBILITY.md',
+            'docs/PACKAGIST-RELEASE.md',
         ];
         $filesPresent = true;
         foreach ($files as $file) {
