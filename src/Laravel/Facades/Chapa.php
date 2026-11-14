@@ -7,6 +7,7 @@ namespace Nateyk\Chapa\Laravel\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /** @method static \Nateyk\Chapa\Resources\Payments payments() */
+/** @see \Nateyk\Chapa\Resources\Payments::hostedTyped() */
 /** @method static \Nateyk\Chapa\Resources\Payouts payouts() */
 /** @method static \Nateyk\Chapa\Resources\Refunds refunds() */
 /** @method static \Nateyk\Chapa\Resources\Subaccounts subaccounts() */

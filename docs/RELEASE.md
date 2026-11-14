@@ -28,6 +28,12 @@ Treat Laravel 11 as a **separate security release blocker** until upstream packa
 
 These depend on a private merchant account and/or Chapa support. Offline tests **cannot** satisfy them. Do not activate real-money transfer approval before they are confirmed.
 
+## Clean Laravel consumer installation and migration gates
+
+Separate CI workflow `Laravel Consumer Installation` installs the checked-out SDK into **fresh Laravel 12/13 application skeletons**, publishes configuration/migrations, runs SQLite migrations and verifies provider auto-discovery and Artisan commands. Unlike Testbench unit tests, these are independently composed application environments. A green result verifies installation mechanics only; it is not real Chapa payment acceptance.
+
+Applications migrating the older `Chapa-Et/chapa-laravel` v1 package should follow [the explicit v1→v2 migration guide](MIGRATE-FROM-V1.md), with special care for amount units, reference length, idempotency, webhooks and legacy provider/facade alias conflicts.
+
 ## Automated pre-release gates
 
 Run `php bin/chapa release:check --json` to check local package identity and list blockers. The output always marks external release readiness as false. CI verifies that the SDK declares no external runtime package dependencies, audits the resolved development dependency graph with `composer audit`, and builds a distributable archive using `composer archive`; neither step publishes the package.

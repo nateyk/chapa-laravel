@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Reviewed the official Chapa-Et legacy Laravel package and documented a safe v1-to-v2 method/amount/webhook migration map.
+- Added `MerchantReference::generate()` using random_bytes() with a bounded 20-character reference and at least 72-bit randomness.
+- Added `HostedCheckoutSession` and `payments()->hostedTyped()` to validate the returned HTTPS checkout URL, Chapa reference and optional timestamps.
+- Added clean Laravel 12/13 consumer-install CI jobs (Composer path install, package auto-discovery, config/migration publishing, SQLite migrations, facade/command boot) and Laravel Testbench provider/facade regression coverage.
+
 - Added validated payout webhook metadata including fee and OTP details, masked destination fields, and safeguards against stale authorization/OTP events overwriting payout success/reversal.
 - Added separate transfer approval live-mode opt-in and fail-closed test/live key matching.
 - Added offline `release:check` CLI, standalone smoke assertions, runtime Composer security audit and distribution-archive build.

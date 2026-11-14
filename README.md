@@ -8,7 +8,7 @@ A **community-maintained**, framework-independent PHP SDK for [Chapa API v2](htt
 
 ## Features
 
-- Hosted checkout, direct wallet charge + validation, inline wallet charge + validation (public key), payment methods, payment verification, list payments, HTML service check
+- Hosted checkout, including a validated typed checkout URL/reference and cryptographically secure 20-character merchant-reference generator; direct/inline wallet charges, payment verification, lists and methods
 - Single, bulk, and merchant-to-merchant payouts; payout verification, bank list and payout list; typed payout lifecycle and destination validation
 - Full/partial refunds, refund verification and refund list
 - Split payment recipient (subaccount) create/list/update
@@ -134,6 +134,26 @@ CHAPA_WEBHOOK_SECRET=your_chapa_webhook_signature_secret
 Keys for test and live environments must not be mixed. Both use the `https://api.chapa.global` origin.
 
 ### Hosted checkout
+
+New in the v2 SDK: use `MerchantReference::generate('ord')` to create a cryptographically random 20-character merchant reference and `payments()->hostedTyped($payload, $storedIdempotencyKey)` to parse a validated checkout URL, Chapa reference and expiration timestamp:
+
+```php
+use Nateyk\Chapa\Support\MerchantReference;
+
+$merchantReference = MerchantReference::generate('ord'); // Persist once per attempt.
+$session = $chapa->payments()->hostedTyped([
+    'amount' => 10000, 'currency' => 'ETB',
+    'merchant_reference' => $merchantReference,
+], $storedIdempotencyKey);
+
+$checkoutUrl = $session->checkoutUrl;
+$chapaReference = $session->chapaReference;
+```
+
+The typed helper validates the returned HTTPS checkout host (default: Chapa's documented `checkout.chapa.global`), without constructing a new URL or assuming a payment succeeded. If Chapa changes the host, explicitly review and supply a trusted-host list. **Persist your attempt before calling the API.**
+
+Migrating an older application? Read the [official legacy package → v2 migration guide](docs/MIGRATE-FROM-V1.md).
+
 
 ```php
 use Nateyk\Chapa\ChapaClient;
