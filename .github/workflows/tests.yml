@@ -32,6 +32,7 @@ jobs:
       - run: php tests/cli-smoke.php
       - run: php tests/scenarios-smoke.php
       - run: php tests/approval-smoke.php
+      - run: php tests/release-smoke.php
       - run: vendor/bin/phpunit --testdox
 
   laravel-compatibility:
@@ -71,3 +72,25 @@ jobs:
             echo "::warning::Laravel 11 dependencies have known security advisories. This isolated job tests compatibility ONLY; do not use this SDK with those versions for production without a separate security review."
           fi
       - run: vendor/bin/phpunit --testdox
+
+  package-preflight:
+    name: Package archive and runtime audit (not release approval)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, dom, json, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+      - run: composer validate --strict
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Audit shipped runtime dependencies (security gate)
+        run: composer audit --no-dev --no-interaction
+      - name: Verify offline release metadata and explicit external blockers
+        run: |
+          php tests/release-smoke.php
+          php bin/chapa release:check --json
+      - name: Build distributable Composer archive (without publishing)
+        run: composer archive --format=zip --dir=/tmp

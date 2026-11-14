@@ -84,6 +84,7 @@ final class TestConsole
         $this->terminal->line('  php bin/chapa test --verify-payout=REF  # read-only payout status');
         $this->terminal->line('  php bin/chapa test --diagnostics=json  # sanitized read-only API report');
         $this->terminal->line('  php bin/chapa simulate all --json     # offline no-key simulation report');
+        $this->terminal->line('  php bin/chapa release:check --json    # offline release gates and blockers');
         $this->terminal->line('Credentials: CHAPA_TEST_SECRET_KEY; optional CHAPA_TEST_PUBLIC_KEY.');
         $this->terminal->line('Never enter keys as command-line arguments or commit them into Git.');
         $this->terminal->line('Only the interactive hosted checkout command can create a test operation.');
