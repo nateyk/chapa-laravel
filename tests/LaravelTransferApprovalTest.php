@@ -210,4 +210,70 @@ final class LaravelTransferApprovalTest extends TestCase
         }
         self::assertSame(0, DB::table('chapa_transfer_approvals')->count());
     }
+    public function testSubmittedPayoutCanBeVerifiedWithoutChangingItsApprovalState(): void
+    {
+        $transport = new MockTransport();
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"chapa_reference":"CP_T_456","status":"PENDING"}}');
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"chapa_reference":"CP_T_456","merchant_reference":"APPROVAL123","amount":10000,"currency":"ETB","status":"SUCCESS"}}');
+        $this->app->instance(ChapaClient::class, new ChapaClient('CHAPA_TEST_private', transport: $transport));
+        $manager = $this->app->make(TransferApprovalManager::class);
+        $id = $manager->request($this->payload(), 'requester:22');
+        self::assertTrue($manager->approve('APPROVAL123', 'admin:7'));
+        $manager->dispatchApproved('APPROVAL123');
+        $verified = $manager->verifySubmitted('APPROVAL123');
+        self::assertTrue($verified->matchesPayout(10000, 'ETB', 'APPROVAL123'));
+        self::assertSame('submitted', DB::table('chapa_transfer_approvals')->where('id', $id)->value('state'));
+        self::assertSame(['POST', 'GET'], array_column($transport->requests, 'method'));
+        self::assertStringContainsString('/v2/payouts/CP_T_456/verify', $transport->requests[1]['url']);
+    }
+
+    public function testUnknownOutcomeCanBeVerifiedButNeverAutomaticallyRetried(): void
+    {
+        $transport = new MockTransport();
+        $transport->responses[] = new RawResponse(500, '{"status":"error","message":"unknown"}');
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"chapa_reference":"CP_T_999","merchant_reference":"APPROVAL123","amount":10000,"currency":"ETB","status":"PENDING"}}');
+        $this->app->instance(ChapaClient::class, new ChapaClient('CHAPA_TEST_private', transport: $transport));
+        $manager = $this->app->make(TransferApprovalManager::class);
+        $id = $manager->request($this->payload(), 'requester:22');
+        self::assertTrue($manager->approve('APPROVAL123', 'admin:7'));
+        try {
+            $manager->dispatchApproved('APPROVAL123');
+            self::fail('Expected uncertain payout creation.');
+        } catch (\Nateyk\Chapa\Exceptions\ApiException) {
+            self::assertTrue(true);
+        }
+        $verified = $manager->verifySubmitted('APPROVAL123');
+        self::assertSame('PENDING', $verified->status);
+        self::assertSame('unknown', DB::table('chapa_transfer_approvals')->where('id', $id)->value('state'));
+        self::assertSame(['POST', 'GET'], array_column($transport->requests, 'method'));
+    }
+
+    public function testPayoutReconciliationRejectsMismatchedVerification(): void
+    {
+        $transport = new MockTransport();
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"chapa_reference":"CP_T_456","status":"PENDING"}}');
+        $transport->responses[] = new RawResponse(200, '{"status":"success","data":{"chapa_reference":"CP_T_456","merchant_reference":"APPROVAL123","amount":12000,"currency":"ETB","status":"SUCCESS"}}');
+        $this->app->instance(ChapaClient::class, new ChapaClient('CHAPA_TEST_private', transport: $transport));
+        $manager = $this->app->make(TransferApprovalManager::class);
+        $manager->request($this->payload(), 'requester:22');
+        $manager->approve('APPROVAL123', 'admin:7');
+        $manager->dispatchApproved('APPROVAL123');
+        $this->expectException(\UnexpectedValueException::class);
+        $manager->verifySubmitted('APPROVAL123');
+    }
+
+    public function testRequestedPayoutCannotBeReconciledAndNoNetworkIsUsed(): void
+    {
+        $transport = new MockTransport();
+        $this->app->instance(ChapaClient::class, new ChapaClient('CHAPA_TEST_private', transport: $transport));
+        $manager = $this->app->make(TransferApprovalManager::class);
+        $manager->request($this->payload(), 'requester:22');
+        try {
+            $manager->verifySubmitted('APPROVAL123');
+            self::fail('Expected not-yet-dispatched rejection.');
+        } catch (\LogicException) {
+            self::assertCount(0, $transport->requests);
+        }
+    }
+
 }
