@@ -1,0 +1,53 @@
+name: Laravel Consumer Installation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-laravel:
+    name: Laravel ${{ matrix.laravel }} clean install / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { laravel: '12', php: '8.3' }
+          - { laravel: '13', php: '8.4' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, dom, json, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+      - name: Create standalone Laravel application
+        run: composer create-project laravel/laravel consumer "^${{ matrix.laravel }}.0" --no-interaction --prefer-dist --no-progress
+      - name: Install checked-out SDK through local Composer repository
+        working-directory: consumer
+        run: |
+          composer config repositories.chapa '{"type":"path","url":"..","options":{"symlink":false}}'
+          composer require 'nateyk/chapa-laravel:*@dev' --no-interaction --prefer-dist --no-progress
+          php artisan package:discover --ansi
+      - name: Publish Chapa config and optional migrations
+        working-directory: consumer
+        run: |
+          php artisan vendor:publish --tag=chapa-config --force
+          php artisan vendor:publish --tag=chapa-migrations --force
+          test -f config/chapa.php
+          ls database/migrations/*chapa*
+      - name: Verify application bootstrap, facade, commands and migrations
+        working-directory: consumer
+        env:
+          DB_CONNECTION: sqlite
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force --no-interaction
+          php artisan list --raw | grep -F 'chapa:webhooks:process'
+          php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $c=$app->make(\Nateyk\Chapa\ChapaClient::class); if (!($c instanceof \Nateyk\Chapa\ChapaClient) || !($app->make("chapa") === $c)) exit(1);'
