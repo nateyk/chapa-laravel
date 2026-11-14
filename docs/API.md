@@ -42,6 +42,9 @@ Source of truth: <https://docs.chapa.global/docs/v2>. V1 `transaction/initialize
 
 ## Typed request and response APIs
 
+For hosted checkout, use `payments()->hostedTyped($payload, $idempotencyKey)` to return `HostedCheckoutSession` with a validated `checkoutUrl`, final-segment `chapaReference`, optional `createdAt` and `expiresAt`. The third argument is an explicitly reviewed list of trusted HTTPS checkout hosts (default: `['checkout.chapa.global']`). A valid hosted session is **not** verified payment completion. Use `MerchantReference::generate('ord')` for a cryptographically unpredictable reference of at most 20 bytes (also enforce database uniqueness).
+
+
 The following methods accept DTOs as an alternative to arrays; all require the same explicit idempotency key as before:
 
 - `payments()->hosted(new HostedCheckoutRequest(...), $key)`
