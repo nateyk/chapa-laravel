@@ -224,6 +224,17 @@ final class TransferApprovalManager
         if (config('chapa.transfer_approval.enabled', false) !== true) {
             throw new \LogicException('Transfer approval integration is disabled.');
         }
+        // The same API hostname serves test and live. Prevent accidental money
+        // movement if approval configuration and credentials are inconsistent.
+        $mode = config('chapa.transfer_approval.mode', 'test');
+        $private = config('chapa.secret_key');
+        if (!is_string($private) || !in_array($mode, ['test', 'live'], true)
+            || !str_starts_with($private, $mode === 'test' ? 'CHAPA_TEST_' : 'CHAPA_LIVE_')) {
+            throw new \LogicException('Transfer approval mode does not match the configured Chapa private key.');
+        }
+        if ($mode === 'live' && config('chapa.transfer_approval.live_enabled', false) !== true) {
+            throw new \LogicException('Live transfer approval requires a separate explicit opt-in.');
+        }
     }
 
     private function assertActor(string $actor): void

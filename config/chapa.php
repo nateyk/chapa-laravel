@@ -12,6 +12,8 @@ return [
     'transfer_approval' => [
         'enabled' => filter_var(env('CHAPA_TRANSFER_APPROVAL_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'probe_enabled' => filter_var(env('CHAPA_TRANSFER_APPROVAL_PROBE_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        // Separate operator switch: ENABLED alone must never enable live transfers.
+        'live_enabled' => filter_var(env('CHAPA_TRANSFER_APPROVAL_LIVE_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'secret' => env('CHAPA_TRANSFER_APPROVAL_SECRET'),
         'mode' => env('CHAPA_TRANSFER_APPROVAL_MODE', 'test'),
         'integration' => env('CHAPA_TRANSFER_APPROVAL_INTEGRATION', 'default'),

@@ -18,6 +18,13 @@ final class TransferApprovalGate
         if (config('chapa.transfer_approval.enabled', false) !== true) {
             return false;
         }
+        $mode = config('chapa.transfer_approval.mode', 'test');
+        $private = config('chapa.secret_key');
+        if (!is_string($private) || !in_array($mode, ['test', 'live'], true)
+            || !str_starts_with($private, $mode === 'test' ? 'CHAPA_TEST_' : 'CHAPA_LIVE_')
+            || ($mode === 'live' && config('chapa.transfer_approval.live_enabled', false) !== true)) {
+            return false;
+        }
         $secret = config('chapa.transfer_approval.secret');
         if (!is_string($secret) || strlen($secret) < 16 || strlen($body) > 16384) {
             return false;
