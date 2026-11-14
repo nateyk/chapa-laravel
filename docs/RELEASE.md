@@ -6,11 +6,21 @@ This is a **community-maintained** Chapa API v2 package and is not affiliated wi
 
 1. Confirm endpoints and request/response schemas against current [Chapa v2 documentation](https://docs.chapa.global/docs/v2) and the actual **test-mode** merchant account, without real-money operations.
 2. Validate the package: `composer validate --strict`, `composer install`, `php tests/smoke.php`, `vendor/bin/phpunit --testdox`, and `composer audit`.
-3. Verify CI on supported PHP 8.2/8.3/8.4, including the Laravel integration suite with SQLite.
+3. Verify CI on supported PHP 8.2/8.3/8.4 **and explicit Laravel 11/12/13 matrix**, including the Laravel integration suite with SQLite.
 4. Exercise server-side verification and webhook signature handling, duplicate webhook delivery, events arriving out of order, retries, partial refunds and the expiry of inbox leases.
 5. Verify supported Laravel versions with a minimal consuming application. Check `vendor:publish` for the config and migration, `artisan migrate`, and schedule the inbox worker.
 6. Review security, exception messages, logging, operations keys, migration rollback and customer data retention; document release-breaking changes in `CHANGELOG.md`.
 7. Publish a **pre-release** tag first (`v0.1.0`) after these checks; use SemVer for subsequent versions. Prefer a signed annotated tag and GitHub Release notes.
+
+## Outstanding transfer approval interoperability gates
+
+- [ ] Chapa confirms whether **API v2** payouts trigger the dashboard Transfer Approval URL.
+- [ ] A genuine **Chapa Test Mode** callback arrives at the **always-rejecting probe**, and the official `Chapa-Signature` message/canonicalization is confirmed without leaking recipient data.
+- [ ] The merchant's app uses protected, tenant-scoped admin Gates to approve payouts, enforces payout limits, and has a reconciliation ledger for `SUCCESS`, `REVERSED` and uncertain outcomes.
+- [ ] End-to-end test-mode duplicate/invalid/cancelled/approved callback cases are exercised with a public HTTPS endpoint; API creation 200 is never treated as successful settlement.
+- [ ] The probe route is removed and `CHAPA_TRANSFER_APPROVAL_PROBE_ENABLED` is reset to false before any live rollout.
+
+These depend on a private merchant account and/or Chapa support. Offline tests **cannot** satisfy them. Do not activate real-money transfer approval before they are confirmed.
 
 ## Packagist registration (maintainer action)
 
