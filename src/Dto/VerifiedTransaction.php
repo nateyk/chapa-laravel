@@ -53,6 +53,27 @@ final readonly class VerifiedTransaction
         return $this->kind !== 'refund' && $this->status === 'SUCCESS';
     }
 
+    /** A payout action-needed state does not imply that an authorization URL exists. */
+    public function payoutStatus(): ?PayoutStatus
+    {
+        return $this->kind === 'payout' ? PayoutStatus::tryFrom($this->status) : null;
+    }
+
+    public function payoutRequiresAction(): bool
+    {
+        return $this->payoutStatus()?->requiresAction() ?? false;
+    }
+
+    /** Require verified SUCCESS and an exact match before marking a payout delivered. */
+    public function matchesPayout(int $amount, string $currency, string $merchantReference): bool
+    {
+        return $this->kind === 'payout'
+            && $this->payoutStatus() === PayoutStatus::SUCCESS
+            && $this->amount === $amount
+            && $this->currency === $currency
+            && $this->merchantReference === $merchantReference;
+    }
+
     public function matchesPayment(int $amount, string $currency, string $merchantReference): bool
     {
         return $this->kind === 'payment'

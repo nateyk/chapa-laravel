@@ -20,6 +20,40 @@ final class RequestValidator
         self::merchantReference($payload);
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     * When both are supplied Chapa uses the inline account details.
+     */
+    public static function payoutDestination(array $payload): void
+    {
+        $account = $payload['account'] ?? null;
+        $reference = $payload['account_reference'] ?? null;
+        if ($account === null && $reference === null) {
+            throw new \InvalidArgumentException('Payout requires an account or account_reference.');
+        }
+        if ($reference !== null && (!is_string($reference) || trim($reference) === '')) {
+            throw new \InvalidArgumentException('account_reference must be a nonempty string.');
+        }
+        if ($account !== null) {
+            if (!is_array($account) || $account === [] || array_is_list($account)) {
+                throw new \InvalidArgumentException('Payout account must be an object.');
+            }
+            foreach (['account_number', 'account_name', 'bank_slug'] as $field) {
+                self::nonEmpty($account, $field);
+            }
+            if (array_key_exists('bank_name', $account) && !is_string($account['bank_name'])) {
+                throw new \InvalidArgumentException('bank_name must be a string.');
+            }
+        }
+        if (array_key_exists('reason', $payload) && !is_string($payload['reason'])) {
+            throw new \InvalidArgumentException('Payout reason must be a string.');
+        }
+        if (array_key_exists('meta', $payload) &&
+            (!is_array($payload['meta']) || ($payload['meta'] !== [] && array_is_list($payload['meta'])))) {
+            throw new \InvalidArgumentException('Payout meta must be an object.');
+        }
+    }
+
     public static function currency(mixed $currency): void
     {
         if (!is_string($currency) || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
