@@ -20,6 +20,7 @@ A **community-maintained**, framework-independent PHP SDK for [Chapa API v2](htt
 - Laravel config publishing, service container binding, facade and opt-in webhook middleware
 - Immutable typed DTOs for hosted/direct/inline payment requests, payouts, and refunds, plus typed payment/payout/refund verification views (raw arrays still work)
 - Optional encrypted Laravel webhook inbox, replay protection, verified processing, retry/backoff and manual recovery commands
+- Opt-in merchant-admin transfer approval ledger, encrypted destination details, signed approval URL callback and one-time payout dispatch (v1 callback protocol; v2 compatibility still unverified)
 - PHP 8.2+, no mandatory runtime dependencies beyond `ext-json`
 
 ## Test-mode CLI playground
@@ -54,6 +55,22 @@ php bin/chapa simulate all --json
 For actual **read-only Chapa Test API** checks, securely provide the test keys as described in the CLI guide, then run `php bin/chapa test --diagnostics=json`. The report is redacted and never includes keys, raw responses or customer information. Interactive test-menu options 11–15 also launch the offline scenarios.
 
 Read [CLI playground](docs/CLI-PLAYGROUND.md), [Payout v2 authorization and lifecycle](docs/PAYOUT-V2.md), and the [deep v2 webhook review](docs/WEBHOOK-V2-AUDIT.md) for supported events, strict event/status validation, idempotency, signature rules and reconciliation responsibilities.
+
+## Transfer Approval URL and merchant-admin review (opt-in)
+
+The package now offers an **optional Laravel transfer approval workflow** for custom merchant applications: users request a payout, authenticated admins approve or reject it, and only approved requests can be submitted to Chapa. The approval callback accepts signed transfer details **only** when they exactly match an already admin-approved, in-flight/submitted payout. It returns 200 to authorize or 400 to reject; **200 is never proof of settlement**.
+
+**Compatibility warning:** Chapa documents Transfer Approval URLs under its older **v1 Transfers** API. Its v2 payout documentation does not confirm that this mechanism is invoked for v2 payouts. The legacy docs also do not unambiguously define the HMAC message. The included default verifier uses HMAC-SHA256 over the exact raw body and fails closed; validate against a genuine Chapa test callback before enabling this feature in production. By default it is **disabled**, and the SDK registers no public callback or admin routes.
+
+```bash
+php artisan vendor:publish --tag=chapa-config
+php artisan vendor:publish --tag=chapa-migrations
+php artisan migrate
+php tests/approval-smoke.php           # offline; synthetic signatures
+php bin/chapa simulate approvals       # offline; no secret key, no network
+```
+
+See [Transfer Approval URL and admin workflow](docs/TRANSFER-APPROVAL.md), [illustrative protected admin routes](examples/laravel-transfer-admin.php), and [sample admin dashboard Blade view](examples/laravel-admin-chapa-transfer-requests.blade.php).
 
 ## Installation
 

@@ -127,3 +127,12 @@ The JSON report uses schema `chapa-sdk-diagnostics/v1` and fields `environment`,
 Within `php bin/chapa test`, menu choices **11–15** now run offline direct, offline inline, payment-state, webhook-replay and full diagnostic scenarios using mocked HTTP. Test secret/public keys are still needed to enter the existing online test menu, but **not** for `php bin/chapa simulate ...`.
 
 Run `php tests/scenarios-smoke.php` for credential-free regression coverage. Tests are also executed by GitHub Actions and `composer test`.
+
+## Transfer approval signature simulation
+
+```bash
+php bin/chapa simulate approvals
+php tests/approval-smoke.php
+```
+
+This scenario uses **synthetic** transfer details and a synthetic approval secret. It checks raw-body HMAC verification, signature tampering rejection and decimal-major-unit amount conversion, and makes **zero HTTP requests**. Laravel's real admin approval ledger/callback integration is covered by separate Testbench tests. The documented Chapa v1 signing message and v2 callback compatibility still require external test-mode confirmation. See [Transfer Approval URL](TRANSFER-APPROVAL.md).
