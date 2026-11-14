@@ -55,7 +55,7 @@ final class LaravelTransferApprovalTest extends TestCase
         ];
     }
 
-    private function callback(array $changes = []): string
+    private function callbackBody(array $changes = []): string
     {
         return json_encode(array_replace([
             'amount' => '100.00',
@@ -78,7 +78,7 @@ final class LaravelTransferApprovalTest extends TestCase
         $stored = DB::table('chapa_transfer_approvals')->where('id', $id)->first();
         self::assertSame('requested', $stored->state);
         self::assertStringNotContainsString('00123456789', $stored->payload_encrypted);
-        $body = $this->callback();
+        $body = $this->callbackBody();
         $signature = hash_hmac('sha256', $body, self::SECRET);
         self::assertFalse($gate->check($body, $signature));
         self::assertFalse($manager->approve('APPROVAL123', 'requester:22')); // No self approval.
@@ -106,7 +106,7 @@ final class LaravelTransferApprovalTest extends TestCase
             ['reference' => 'OTHER'],
             ['currency' => 'USD'],
         ] as $changes) {
-            $tampered = $this->callback($changes);
+            $tampered = $this->callbackBody($changes);
             self::assertFalse($gate->check($tampered, hash_hmac('sha256', $tampered, self::SECRET)));
         }
         self::assertCount(1, $transport->requests);
@@ -123,7 +123,7 @@ final class LaravelTransferApprovalTest extends TestCase
         self::assertTrue($manager->reject('APPROVAL123', 'admin:3'));
         self::assertFalse($manager->approve('APPROVAL123', 'admin:4'));
         self::assertFalse($this->app->make(TransferApprovalGate::class)->check(
-            $body = $this->callback(), hash_hmac('sha256', $body, self::SECRET),
+            $body = $this->callbackBody(), hash_hmac('sha256', $body, self::SECRET),
         ));
         $this->app['config']->set('chapa.transfer_approval.enabled', false);
         self::assertFalse($this->app->make(TransferApprovalGate::class)->check($body, hash_hmac('sha256', $body, self::SECRET)));
@@ -150,13 +150,13 @@ final class LaravelTransferApprovalTest extends TestCase
         self::assertSame($before, DB::table('chapa_transfer_approvals')->where('id', $id)->value('idempotency_key'));
         self::assertCount(1, $transport->requests);
         self::assertTrue($this->app->make(TransferApprovalGate::class)->check(
-            $body = $this->callback(), hash_hmac('sha256', $body, self::SECRET),
+            $body = $this->callbackBody(), hash_hmac('sha256', $body, self::SECRET),
         )); // Chapa might have sent the transfer despite the network error.
     }
 
     public function testConfiguredControllerReturnsOnly200Or400(): void
     {
-        $body = $this->callback();
+        $body = $this->callbackBody();
         $this->call('POST', '/chapa/transfer-approval', [], [], [], [
             'HTTP_CHAPA_SIGNATURE' => hash_hmac('sha256', $body, self::SECRET),
             'CONTENT_TYPE' => 'application/json',
