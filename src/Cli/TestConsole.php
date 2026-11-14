@@ -8,6 +8,7 @@ use Nateyk\Chapa\ChapaClient;
 use Nateyk\Chapa\Exceptions\ApiException;
 use Nateyk\Chapa\Http\ApiResponse;
 use Nateyk\Chapa\Support\IdempotencyKey;
+use Nateyk\Chapa\Support\MerchantReference;
 
 /** Developer-only test-mode CLI; never accepts live keys or stores credentials. */
 final class TestConsole
@@ -301,27 +302,18 @@ final class TestConsole
             $this->terminal->line('Cancelled. No payment creation request sent.');
             return true;
         }
-        $reference = 'SDK'.strtoupper(bin2hex(random_bytes(7)));
+        $reference = MerchantReference::generate('sdk');
         $operationKey = IdempotencyKey::generate();
         $this->terminal->line('Merchant reference: '.$reference);
         $this->terminal->line('Idempotency key (reuse for this same operation only): '.$operationKey);
         try {
-            $response = $client->payments()->hosted([
+            // Use the same strict host validator as real Laravel checkouts.
+            // An HTTPS URL alone is not safe to print or open.
+            $session = $client->payments()->hostedTyped([
                 'amount' => $amount, 'currency' => 'ETB', 'merchant_reference' => $reference,
             ], $operationKey);
-            $data = $response->data();
-            $checkoutUrl = is_array($data) ? ($data['checkout_url'] ?? null) : null;
-            if (!$response->operationSucceeded() || !is_string($checkoutUrl)) {
-                $this->terminal->line('Checkout was not confirmed by the API; do not retry with a new idempotency key.');
-                return false;
-            }
-            $parsed = parse_url($checkoutUrl);
-            if ($parsed === false || ($parsed['scheme'] ?? null) !== 'https'
-                || empty($parsed['host']) || isset($parsed['user']) || isset($parsed['pass'])) {
-                $this->terminal->line('Unsafe or missing HTTPS checkout URL returned; not displaying it.');
-                return false;
-            }
-            $this->terminal->line('Test checkout URL: '.$checkoutUrl);
+            $this->terminal->line('Test checkout URL: '.$session->checkoutUrl);
+            $this->terminal->line('Chapa payment reference: '.$session->chapaReference);
             $this->terminal->line('Checkout initialization is NOT proof of payment. Verify before fulfilling anything.');
             return true;
         } catch (\Throwable) {
