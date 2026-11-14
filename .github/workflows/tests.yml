@@ -86,8 +86,11 @@ jobs:
           coverage: none
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist --no-progress
-      - name: Audit shipped runtime dependencies (security gate)
-        run: composer audit --no-dev --no-interaction
+      - name: Verify no third-party runtime packages are required
+        run: |
+          php -r '$r=json_decode(file_get_contents("composer.json"),true,512,JSON_THROW_ON_ERROR)["require"]??[];foreach(array_keys($r) as $p){if($p!=="php"&&!str_starts_with($p,"ext-")){fwrite(STDERR,"Unexpected runtime package dependency: ".$p.PHP_EOL);exit(1);}}echo "No external runtime dependencies: no --no-dev packages to audit.".PHP_EOL;'
+      - name: Audit resolved CI development dependencies (security gate)
+        run: composer audit --no-interaction
       - name: Verify offline release metadata and explicit external blockers
         run: |
           php tests/release-smoke.php

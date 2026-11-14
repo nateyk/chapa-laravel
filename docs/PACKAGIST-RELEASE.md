@@ -4,7 +4,7 @@ Package identity: `nateyk/chapa-laravel`. Community-maintained Chapa API v2 SDK,
 
 ## Automated release preflight (no publication)
 
-The CI package-preflight job runs `composer validate --strict`, Composer install, `composer audit --no-dev`, `php tests/release-smoke.php`, `php bin/chapa release:check --json`, and `composer archive --format=zip --dir=/tmp`. Archive creation only validates distributability; it does not publish any package.
+The CI package-preflight job runs `composer validate --strict`, Composer install, a verification that the manifest has **no third-party runtime packages**, followed by `composer audit` for the installed development dependency graph, `php tests/release-smoke.php`, `php bin/chapa release:check --json`, and `composer archive --format=zip --dir=/tmp`. Archive creation only validates distributability; it does not publish any package.
 
 The CLI preflight always reports `release_ready: false`, because offline checks cannot prove real Chapa API behavior, a genuine signed callback, a sandbox transfer or maintainer approval.
 

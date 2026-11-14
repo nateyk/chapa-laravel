@@ -30,7 +30,7 @@ These depend on a private merchant account and/or Chapa support. Offline tests *
 
 ## Automated pre-release gates
 
-Run `php bin/chapa release:check --json` to check local package identity and list blockers. The output always marks external release readiness as false. CI audits **runtime** Composer dependencies with `composer audit --no-dev` and builds a distributable archive using `composer archive`; neither step publishes the package.
+Run `php bin/chapa release:check --json` to check local package identity and list blockers. The output always marks external release readiness as false. CI verifies that the SDK declares no external runtime package dependencies, audits the resolved development dependency graph with `composer audit`, and builds a distributable archive using `composer archive`; neither step publishes the package.
 
 See [Packagist playbook](PACKAGIST-RELEASE.md), [Laravel 11 security report](LARAVEL-11-SECURITY.md) and [Chapa callback compatibility](CHAPA-CALLBACK-COMPATIBILITY.md). Real test-mode Chapa integration remains mandatory before the pre-release tag.
 

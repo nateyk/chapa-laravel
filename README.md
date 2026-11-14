@@ -89,7 +89,7 @@ php bin/chapa release:check
 php bin/chapa release:check --json
 ```
 
-The CI package gate also audits runtime Composer dependencies and validates an archive. Neither operation creates a tag, registers Packagist or establishes real-money readiness. Read [Packagist preparation](docs/PACKAGIST-RELEASE.md), [Laravel 11 advisory review](docs/LARAVEL-11-SECURITY.md) and [Chapa Approval URL compatibility](docs/CHAPA-CALLBACK-COMPATIBILITY.md).
+The CI package gate confirms zero third-party runtime dependencies, audits development dependencies, and validates an archive. Neither operation creates a tag, registers Packagist or establishes real-money readiness. Read [Packagist preparation](docs/PACKAGIST-RELEASE.md), [Laravel 11 advisory review](docs/LARAVEL-11-SECURITY.md) and [Chapa Approval URL compatibility](docs/CHAPA-CALLBACK-COMPATIBILITY.md).
 
 ## Installation
 
