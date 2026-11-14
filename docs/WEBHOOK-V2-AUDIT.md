@@ -25,7 +25,7 @@ Source of truth:
 | payout | `payout.blocked` | `blocked` | Reconcile/hold |
 | payout | `payout.auth_needed` | `auth_needed` | Await additional authorization |
 | payout | `payout.otp_needed` | `otp_needed` | Await OTP; never log OTP values |
-| payout | `payout.otp_failed` | `otp_failed` | Report failed authorization attempt |
+| payout | `payout.otp_failed` | `otp_failed` | Report failed authorization attempt; inspect `otp_attempts` without exposing OTP values |
 | refund | `payment.partially_refunded` | `partially_refunded` | Reconcile **separate refund records**; no renewed fulfillment |
 | refund | `payment.fully_refunded` | `fully_refunded` | Reconcile **separate refund records**; no renewed fulfillment |
 
@@ -89,3 +89,11 @@ See [WEBHOOK-INBOX.md](WEBHOOK-INBOX.md) for installing the migration, routing t
 - Timeout, retry exhaustion, dead-letter alerting, outage recovery and configured data retention.
 - Verify active Chapa dashboard mode matches the stored SDK keys and incoming webhook `mode`.
 - Review finance reconciliation, PII retention and production use separately before tagging a stable release.
+
+## Payout webhook metadata and OTP safety
+
+Chapa's v2 payout examples include optional `payout_type` (`customer_payout`, `merchant_payout`, `bulk_payout`), `service_fee` in integer cents (often a numeric string), `processor_reference`, destination `account`, `reason`, `auth_type`, `otp_channel` (array such as `["sms","email","telegram"]`), and `otp_attempts` (nonnegative number). The SDK validates supplied metadata with `WebhookEvent::fromArray()` and exposes it through `WebhookEvent::payoutDetails()`; the metadata view exposes only the **last four** destination account characters, never the full account number.
+
+`payout.success` is the **only** payout webhook that can satisfy `ChapaWebhookProcessed::payoutMatches()`, which additionally requires a server-verified `SUCCESS` with exact amount/currency/merchant reference. A late `payout.auth_needed`, `payout.otp_needed` or `payout.otp_failed` cannot overwrite verified success: conflicting event/status updates fail closed and require reconciliation. The `OTP_FAILED` webhook status **is not** a documented payout verification status; an OTP failure can be observed while verification remains `OTP_NEEDED` or moves to a different payout state. Never invent an OTP URL, collect OTP credentials in the webhook handler, or create a replacement payout automatically. A later `payout.reversed` remains a legitimate new state after success.
+
+Only store and display account details where the consuming merchant's application has an explicit privacy/retention policy. Do not log raw webhook payloads, OTP attempts alongside identifying account fields, or any recipient bank information.

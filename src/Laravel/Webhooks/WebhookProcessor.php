@@ -130,7 +130,7 @@ final class WebhookProcessor
         // A valid signature and success notification may still precede a consistent verify response.
         // Retry instead of permanently acknowledging an unverified success event.
         if (($event->signalsSuccessfulPayment()
-            || ($event->type === 'payout' && $event->name === 'payout.success' && $event->status === 'success'))
+            || $event->signalsSuccessfulPayout())
             && !$verified->succeeded()) {
             throw new \RuntimeException('Chapa reported success but verification is not yet final.');
         }
