@@ -12,6 +12,40 @@ The Chapa merchant dashboard (Account Settings → Transfer Approval) exposes a 
 
 **Important signature interoperability gate:** The legacy docs say HMAC-SHA256 with an `approval_secret`, but do not explicitly define the HMAC *message/canonicalization*. The SDK uses **HMAC-SHA256 over the exact raw request body** and requires a 64-character hex signature. This is secure and fail-closed, **but is not yet verified against a genuine Chapa approval callback**. If Chapa uses a different signing formula, calls will return 400 until an authenticated, documented compatibility adaptation is implemented. Never disable signature verification, accept a secret-only token, or approve from unsigned fields. For a confirmed different algorithm, the consuming Laravel application can bind an audited `Nateyk\Chapa\Transfers\ApprovalSignatureVerifier` implementation; it must cryptographically authenticate the complete payload, not just compare a reusable token.
 
+## Safe test-only interoperability probe (new)
+
+Chapa's older documentation confirms a Transfer Approval URL but **does not define the exact HMAC message**, and the published v2 payout documentation does **not confirm the callback is used for v2**. The optional probe lets you test this safely using your own Chapa **Test Mode** account and a publicly reachable HTTPS route. It cannot establish compatibility until a genuine test callback has arrived.
+
+**The probe ALWAYS returns HTTP 400 and NEVER approves a payout**, including when its calculated HMAC matches. Chapa can therefore reject/revert the simulated transfer. Do not send real funds through this diagnostic endpoint.
+
+Set the following in your **server's private environment**; never post real credentials or callbacks in issues or chats:
+
+```dotenv
+CHAPA_SECRET_KEY=CHAPA_TEST_your_own_test_key
+CHAPA_TRANSFER_APPROVAL_ENABLED=false
+CHAPA_TRANSFER_APPROVAL_PROBE_ENABLED=true
+CHAPA_TRANSFER_APPROVAL_MODE=test
+CHAPA_TRANSFER_APPROVAL_SECRET=your_own_test_approval_secret
+```
+
+Register a separate explicit probe route in `routes/web.php`:
+
+```php
+use Illuminate\Support\Facades\Route;
+use Nateyk\Chapa\Laravel\Http\Controllers\ChapaTransferApprovalProbeController;
+
+Route::post('/chapa/transfer-approval-probe', ChapaTransferApprovalProbeController::class);
+```
+
+Exempt **only** `chapa/transfer-approval-probe` from CSRF and configure an HTTPS trusted proxy. In the Chapa Test Dashboard, temporarily set the Transfer Approval URL to the publicly reachable probe URL and use the matching Approval Secret. With separate test credentials, trigger **only a simulated test transfer** *if Chapa confirms this callback supports v2*. The probe's minimal application log contains only:
+
+- `signature: matched_raw_body_hmac | mismatch | not_checked`
+- `payload: valid | invalid | not_checked | rejected_size | unconfigured`
+
+It never logs the request body, signature, account name/number, merchant reference, IP address or API key. `matched_raw_body_hmac` means the locally computed raw-body HMAC matched; it **does not** prove that a v2 payout actually completes or that the endpoint will be used in every environment. A `mismatch` means further Chapa support confirmation is necessary; **do not turn off signature verification or guess an alternate scheme**.
+
+For safety the probe returns **404** unless `PROBE_ENABLED=true`, `MODE=test` and the SDK private key begins `CHAPA_TEST_`. The active approval gate remains independently disabled. Once investigated, **remove the probe route**, clear `CHAPA_TRANSFER_APPROVAL_PROBE_ENABLED`, and reset the dashboard Approval URL. Do not leave a public diagnostic endpoint enabled indefinitely.
+
 ## Admin-before-Chapa process
 
 ```text
@@ -128,16 +162,17 @@ $created = $manager->dispatchApproved('PAYOUT123');
 // Do NOT treat creation as successful settlement.
 ```
 
-The manager's protected states are `requested → approved → sending → submitted`. Rejections are allowed only before dispatch. A failed/uncertain network request leaves the record in `unknown`, not silently re-POSTed. The idempotency key was generated **before** dispatch, persisted and reused. If the network result is uncertain, verify the merchant reference with Chapa and investigate before any manual retry; **never create a different idempotency key for the same attempt**.
+The manager's protected states are `requested → approved → sending → submitted`. Rejections are allowed only before dispatch. A failed/uncertain network request leaves the record in `unknown`, not silently re-POSTed. The idempotency key was generated **before** dispatch, persisted and reused. If the network result is uncertain, use the new **read-only** `verifySubmitted($merchantReference)` helper (shown below) and investigate before any manual retry; **never create a different idempotency key for the same attempt**.
 
 Approval records are isolated by `integration`, `mode`, and `merchant_reference`, with a database uniqueness constraint and encrypted transfer details. The SDK stores the approver/requester IDs as audit labels. The host app must protect admin routes, enforce tenant boundaries, avoid excessive privileges, and implement account owner verification, business limits and compliance checks.
 
 ## 4. Track the final result
 
-Use existing SDK methods:
+Use a previously authorized manager for a submitted or unknown payout. This does **one GET** and checks amount, currency, merchant reference and known Chapa reference against the stored approval. It never submits a payout and never updates the business ledger:
 
 ```php
-$verification = $chapa->payouts()->verifyTyped('PAYOUT123');
+$verification = app(\Nateyk\Chapa\Laravel\Transfers\TransferApprovalManager::class)
+    ->verifySubmitted('PAYOUT123');
 if ($verification->matchesPayout(10000, 'ETB', 'PAYOUT123')) {
     // Idempotent, atomic account/balance settlement in your merchant application.
 } elseif ($verification->payoutRequiresAction()) {

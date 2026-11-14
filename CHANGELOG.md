@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added test-only Transfer Approval URL interoperability probe: always HTTP 400, redacted diagnostics only, gated by test-mode keys and explicit configuration; no auto routes.
+- Added read-only payout reconciliation after submission/unknown network outcomes; validates server-side amount, currency and merchant/Chapa references without submitting or updating settlement.
+- Added explicit Laravel 11/12/13 compatibility CI jobs alongside PHP 8.2/8.3/8.4 tests; includes regression coverage for probe safety and reconciliation.
+
 - Added opt-in merchant-admin transfer approval flow with an encrypted approval ledger, requester/approver separation, protected idempotent dispatch and no automatic public route.
 - Added fail-closed Transfer Approval URL signature verification, exact amount/destination checks and synchronous 200/400 response.
 - Added test-only approval signature smoke checks, offline CLI simulation, Laravel Testbench request/decision/dispatch coverage and integration docs.

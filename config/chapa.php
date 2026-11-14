@@ -11,6 +11,7 @@ return [
     // Opt-in legacy transfer approval callback; do NOT enable until Chapa v2 compatibility is confirmed.
     'transfer_approval' => [
         'enabled' => filter_var(env('CHAPA_TRANSFER_APPROVAL_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'probe_enabled' => filter_var(env('CHAPA_TRANSFER_APPROVAL_PROBE_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'secret' => env('CHAPA_TRANSFER_APPROVAL_SECRET'),
         'mode' => env('CHAPA_TRANSFER_APPROVAL_MODE', 'test'),
         'integration' => env('CHAPA_TRANSFER_APPROVAL_INTEGRATION', 'default'),
