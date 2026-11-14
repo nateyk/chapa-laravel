@@ -4,9 +4,9 @@ Sources: [Create Payout](https://docs.chapa.global/docs/v2/payouts/payout), [Ver
 
 ## No documented authorization URL
 
-The v2 payout API documents statuses **AUTH_NEEDED** and **OTP_NEEDED**, but does **not** define an \`authorization_url\`, browser redirect, server approval callback, or OTP-submission endpoint in the two referenced endpoints. Do not invent one, or copy the older v1 Transfer Approval URL into v2 without Chapa confirmation.
+The v2 payout API documents statuses **AUTH_NEEDED** and **OTP_NEEDED**, but does **not** define an `authorization_url`, browser redirect, server approval callback, or OTP-submission endpoint in the two referenced endpoints. Do not invent one, or copy the older v1 Transfer Approval URL into v2 without Chapa confirmation.
 
-A successful \`POST /v2/payouts\` returns a **PENDING** creation receipt. Always verify via \`GET /v2/payouts/{reference}/verify\` or reconcile signed webhooks before marking a transfer delivered.
+A successful `POST /v2/payouts` returns a **PENDING** creation receipt. Always verify via `GET /v2/payouts/{reference}/verify` or reconcile signed webhooks before marking a transfer delivered.
 
 | Status | Handling |
 | --- | --- |
@@ -20,7 +20,7 @@ A successful \`POST /v2/payouts\` returns a **PENDING** creation receipt. Always
 
 ## Example SDK usage
 
-\`\`\`php
+```php
 use Nateyk\Chapa\Dto\PayoutRequest;
 use Nateyk\Chapa\Support\IdempotencyKey;
 
@@ -48,13 +48,13 @@ if ($verified->matchesPayout(10000, 'ETB', 'payout-101')) {
     // Alert merchant: AUTH_NEEDED or OTP_NEEDED.
     // Do not guess an authorization URL or ask for OTP in an unsupported API.
 }
-\`\`\`
+```
 
 For **read-only test-mode** status inspection:
 
-\`\`\`bash
+```bash
 php bin/chapa test --verify-payout=CP_T_17902410738754
-\`\`\`
+```
 
 The CLI never submits a payout; it accepts only CHAPA_TEST_ keys.
 

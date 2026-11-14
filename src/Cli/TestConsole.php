@@ -34,7 +34,8 @@ final class TestConsole
             return $this->doctor();
         }
         if ($args !== [] && $args !== ['--check'] && $args !== ['--diagnostics=json'] && $args !== ['--diagnostics=text']
-            && !(count($args) === 1 && str_starts_with($args[0], '--verify-payment='))) {
+            && !(count($args) === 1 && str_starts_with($args[0], '--verify-payment='))
+            && !(count($args) === 1 && str_starts_with($args[0], '--verify-payout='))) {
             $this->terminal->line('Unknown option. Run: php bin/chapa test --help');
             return 2;
         }
@@ -64,6 +65,9 @@ final class TestConsole
             return $this->check($client, $public !== null) ? 0 : 1;
         }
         if ($args !== []) {
+            if (str_starts_with($args[0], '--verify-payout=')) {
+                return $this->verifyPayout($client, substr($args[0], strlen('--verify-payout='))) ? 0 : 1;
+            }
             $reference = substr($args[0], strlen('--verify-payment='));
             return $this->verifyPayment($client, $reference) ? 0 : 1;
         }
@@ -77,6 +81,7 @@ final class TestConsole
         $this->terminal->line('  php bin/chapa test                     # interactive secure key prompts and menu');
         $this->terminal->line('  php bin/chapa test --check             # read-only test API checks');
         $this->terminal->line('  php bin/chapa test --verify-payment=REF # read-only payment status');
+        $this->terminal->line('  php bin/chapa test --verify-payout=REF  # read-only payout status');
         $this->terminal->line('  php bin/chapa test --diagnostics=json  # sanitized read-only API report');
         $this->terminal->line('  php bin/chapa simulate all --json     # offline no-key simulation report');
         $this->terminal->line('Credentials: CHAPA_TEST_SECRET_KEY; optional CHAPA_TEST_PUBLIC_KEY.');
@@ -161,7 +166,7 @@ final class TestConsole
             $this->terminal->line('10 Public-key HTML service      0 Exit');
             $this->terminal->line('11 Offline direct charge         12 Offline inline charge');
             $this->terminal->line('13 Payment state matrix          14 Offline webhook replay');
-            $this->terminal->line('15 Offline diagnostics report');
+            $this->terminal->line('15 Offline diagnostics report      16 Verify payout status');
             try {
                 $choice = $this->terminal->read('Select: ');
                 if ($choice === '0') {
@@ -187,7 +192,8 @@ final class TestConsole
                     case '13': $success = $this->offline('states'); break;
                     case '14': $success = $this->offline('webhooks'); break;
                     case '15': $success = $this->offline('all'); break;
-                    default: $this->terminal->line('Unknown option. Choose 0-15.'); continue 2;
+                    case '16': $success = $this->verifyPayout($client, $this->terminal->read('Chapa or merchant payout reference: ')); break;
+                    default: $this->terminal->line('Unknown option. Choose 0-16.'); continue 2;
                 }
                 $failed = !$success || $failed;
             } catch (\Throwable) {
@@ -250,6 +256,33 @@ final class TestConsole
             $this->terminal->line('Verification failed (HTTP '.$exception->statusCode.').');
         } catch (\Throwable) {
             $this->terminal->line('Verification failed (invalid reference, connection, or response).');
+        }
+        return false;
+    }
+
+    /** Read-only test-mode verification, no payout creation or OTP-submission API. */
+    private function verifyPayout(ChapaClient $client, string $reference): bool
+    {
+        if ($reference === '' || preg_match('/^[A-Za-z0-9_-]{1,120}$/D', $reference) !== 1) {
+            $this->terminal->line('Invalid reference: use only letters, digits, underscore, or hyphen.');
+            return false;
+        }
+        try {
+            $payout = $client->payouts()->verifyTyped($reference);
+            $this->terminal->line('Verified payout status: '.$payout->status);
+            $this->terminal->line('Amount in cents: '.$payout->amount.' '.$payout->currency);
+            if ($payout->payoutRequiresAction()) {
+                $this->terminal->line('Additional authorization or OTP required. Chapa v2 does not document an approval URL or OTP submission endpoint.');
+            } elseif ($payout->payoutStatus()?->delivered() === true) {
+                $this->terminal->line('Payout status SUCCESS. Match amount, currency and merchant reference before updating records.');
+            } else {
+                $this->terminal->line('Payout not confirmed as delivered; reconcile via verification and webhooks.');
+            }
+            return true;
+        } catch (ApiException $exception) {
+            $this->terminal->line('Payout verification failed (HTTP '.$exception->statusCode.').');
+        } catch (\Throwable) {
+            $this->terminal->line('Payout verification failed (invalid reference, connection, or response).');
         }
         return false;
     }

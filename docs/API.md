@@ -34,7 +34,7 @@ The SDK deliberately **does not guess** Chapa's undocumented cursor query parame
 - Hosted uses `meta`, nested `customer`, and optional `subaccounts` for revenue splitting.
 - Direct uses `metadata`, nested `customer` with `phone_number`, and `payment_method`.
 - Inline uses `meta`, `mobile` plus top-level customer fields, and a **public** key.
-- Payouts can use `account` or `account_reference`; batch payouts take `items` and optional top-level `currency`.
+- Payouts can use `account` (account_number, account_name, bank_slug) or `account_reference`; when both exist, inline account fields take precedence. Batch payouts take `items` and optional top-level `currency`.
 - Refunds omit `amount` for full refunds and specify an integer-cent amount for partial refunds.
 - Subaccount operations are not idempotency-cached; use your own deduplication and state locking.
 
@@ -51,5 +51,9 @@ The following methods accept DTOs as an alternative to arrays; all require the s
 - `refunds()->create(new RefundRequest(...), $key)`
 
 `payments()->verifyTyped($reference)`, `payouts()->verifyTyped($reference)`, and `refunds()->verifyTyped($refundReference)` return `Nateyk\Chapa\Dto\VerifiedTransaction`. Payment verification supports `matchesPayment($expectedAmountCents, $currency, $merchantReference)`. Refunds deliberately have no inferred `succeeded()` status until a documented final state is confirmed.
+
+Typed payout creation is available through `payouts()->createTyped($payload, $idempotencyKey)`, returning `PayoutInitiation`. Verification through `verifyTyped()` exposes `payoutStatus()`, `payoutRequiresAction()`, and `matchesPayout($amountCents, $currency, $merchantReference)`.
+
+Chapa v2 does not document a payout `authorization_url` or OTP submission endpoint. See [PAYOUT-V2.md](PAYOUT-V2.md).
 
 For event inbox operation, see [WEBHOOK-INBOX.md](WEBHOOK-INBOX.md).
