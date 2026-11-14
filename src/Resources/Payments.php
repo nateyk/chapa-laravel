@@ -6,6 +6,7 @@ namespace Nateyk\Chapa\Resources;
 
 use Nateyk\Chapa\Http\ApiResponse;
 use Nateyk\Chapa\Dto\HostedCheckoutRequest;
+use Nateyk\Chapa\Dto\HostedCheckoutSession;
 use Nateyk\Chapa\Dto\DirectChargeRequest;
 use Nateyk\Chapa\Dto\InlineChargeRequest;
 use Nateyk\Chapa\Dto\VerifiedTransaction;
@@ -24,6 +25,21 @@ final class Payments
         $payload = $payload instanceof HostedCheckoutRequest ? $payload->toArray() : $payload;
         Validate::money($payload);
         return $this->http->request('POST', '/v2/payments/hosted', body: $payload, idempotencyKey: $idempotencyKey);
+    }
+
+    /**
+     * Typed hosted checkout receipt with a trusted HTTPS redirect and extracted
+     * Chapa reference. A checkout URL is not proof that payment succeeded.
+     *
+     * @param array<string, mixed>|HostedCheckoutRequest $payload
+     * @param list<string> $trustedHosts
+     */
+    public function hostedTyped(
+        array|HostedCheckoutRequest $payload,
+        string $idempotencyKey,
+        array $trustedHosts = ['checkout.chapa.global'],
+    ): HostedCheckoutSession {
+        return HostedCheckoutSession::fromResponse($this->hosted($payload, $idempotencyKey), $trustedHosts);
     }
 
     /** @param array<string, mixed> $payload */
