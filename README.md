@@ -91,6 +91,18 @@ php bin/chapa release:check --json
 
 The CI package gate confirms zero third-party runtime dependencies, audits development dependencies, and validates an archive. Neither operation creates a tag, registers Packagist or establishes real-money readiness. Read [Packagist preparation](docs/PACKAGIST-RELEASE.md), [Laravel 11 advisory review](docs/LARAVEL-11-SECURITY.md) and [Chapa Approval URL compatibility](docs/CHAPA-CALLBACK-COMPATIBILITY.md).
 
+## Ready-to-integrate Laravel and sandbox guide
+
+Run the new **local-only** setup checks and follow the step-by-step [Laravel installation and genuine Chapa test-mode acceptance guide](docs/INSTALL-AND-SANDBOX.md):
+
+```bash
+php artisan chapa:doctor --json     # Redacted Laravel config/migration diagnostics; no HTTP
+php bin/chapa test --diagnostics=json  # Read-only Chapa TEST API, from repo
+php artisan chapa:webhooks:process --limit=50  # Process durable signed receipts
+```
+
+The package now includes HTTP-level Laravel automated journeys covering signed webhook ingress, deduplication, Chapa verification, single order fulfillment, authenticated admin approval and one-time payout dispatch. All external API calls in those tests are mocked. The **real** Chapa test callback and authorization URL compatibility remain external release blockers.
+
 ## Installation
 
 When published to Packagist, install using:

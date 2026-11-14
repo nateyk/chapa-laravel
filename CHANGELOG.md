@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added Laravel HTTP-level webhook and transfer-approval acceptance suites, covering role authorization, signed ingress, durable inbox deduplication and verified idempotent fulfillment.
+- Added redacted `php artisan chapa:doctor --json` local setup diagnostics and installed Laravel consumer checks.
+- Hardened the CLI test checkout to reject unexpected HTTPS redirect hosts using the typed trusted-host Chapa v2 checkout session.
+- Added step-by-step `docs/INSTALL-AND-SANDBOX.md` for actual Chapa Test Mode webhook and payout verification, with explicit outstanding external approval/signature gates.
+
 - Reviewed the official Chapa-Et legacy Laravel package and documented a safe v1-to-v2 method/amount/webhook migration map.
 - Added `MerchantReference::generate()` using random_bytes() with a bounded 20-character reference and at least 72-bit randomness.
 - Added `HostedCheckoutSession` and `payments()->hostedTyped()` to validate the returned HTTPS checkout URL, Chapa reference and optional timestamps.

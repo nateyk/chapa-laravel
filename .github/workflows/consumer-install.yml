@@ -50,4 +50,6 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --force --no-interaction
           php artisan list --raw | grep -F 'chapa:webhooks:process'
+          php artisan list --raw | grep -F 'chapa:doctor'
+          php artisan chapa:doctor --json | grep -F '"live_money_certified": false'
           php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $c=$app->make(\Nateyk\Chapa\ChapaClient::class); if (!($c instanceof \Nateyk\Chapa\ChapaClient) || !($app->make("chapa") === $c)) exit(1);'
