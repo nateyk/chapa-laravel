@@ -69,6 +69,11 @@ final readonly class WebhookEvent
         if (isset($data['currency']) && preg_match('/^[A-Z]{3}$/D', $data['currency']) !== 1) {
             throw new \UnexpectedValueException('Webhook currency must be three uppercase letters.');
         }
+        // Validate documented optional payout fields without printing or persisting them
+        // separately; unknown event/status combinations remain rejected.
+        if ($type === 'payout') {
+            PayoutWebhookDetails::fromArray($data);
+        }
         $amount = self::cents($data['amount'] ?? null);
         $refundedAmount = self::cents($data['refunded_amount'] ?? null);
         if ($type === 'refund' && $amount !== null && $refundedAmount !== null && $refundedAmount > $amount) {
@@ -102,6 +107,16 @@ final readonly class WebhookEvent
             }
         }
         throw new \UnexpectedValueException('Webhook money field must be a nonnegative integer in cents.');
+    }
+
+    public function payoutDetails(): ?PayoutWebhookDetails
+    {
+        return $this->type === 'payout' ? PayoutWebhookDetails::fromArray($this->payload) : null;
+    }
+
+    public function signalsSuccessfulPayout(): bool
+    {
+        return $this->type === 'payout' && $this->name === 'payout.success' && $this->status === 'success';
     }
 
     public function signalsSuccessfulPayment(): bool

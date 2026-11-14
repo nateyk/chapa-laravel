@@ -21,6 +21,13 @@ final readonly class ChapaWebhookProcessed
     ) {
     }
 
+    /** Only a verified payout.success with exact business dimensions means delivery. */
+    public function payoutMatches(int $amountCents, string $currency, string $merchantReference): bool
+    {
+        return $this->webhook->signalsSuccessfulPayout()
+            && $this->verification?->matchesPayout($amountCents, $currency, $merchantReference) === true;
+    }
+
     public function paymentMatches(int $amountCents, string $currency, string $merchantReference): bool
     {
         return $this->webhook->signalsSuccessfulPayment()

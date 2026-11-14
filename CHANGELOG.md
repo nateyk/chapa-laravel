@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added validated payout webhook metadata including fee and OTP details, masked destination fields, and safeguards against stale authorization/OTP events overwriting payout success/reversal.
+- Added separate transfer approval live-mode opt-in and fail-closed test/live key matching.
+- Added offline `release:check` CLI, standalone smoke assertions, runtime Composer security audit and distribution-archive build.
+- Added detailed Chapa callback interoperability, Laravel 11 advisories and Packagist pre-release preparation documents.
+
 - Added test-only Transfer Approval URL interoperability probe: always HTTP 400, redacted diagnostics only, gated by test-mode keys and explicit configuration; no auto routes.
 - Added read-only payout reconciliation after submission/unknown network outcomes; validates server-side amount, currency and merchant/Chapa references without submitting or updating settlement.
 - Added explicit Laravel 11/12/13 compatibility CI jobs alongside PHP 8.2/8.3/8.4 tests; includes regression coverage for probe safety and reconciliation.

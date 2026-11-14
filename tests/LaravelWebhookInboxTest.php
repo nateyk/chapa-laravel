@@ -100,4 +100,34 @@ final class LaravelWebhookInboxTest extends TestCase
         self::assertTrue($this->app->make(WebhookProcessor::class)->process($receipt->receiptId));
         Event::assertDispatched(ChapaWebhookProcessed::class, static fn ($event): bool => $event->webhook->type === 'refund' && $event->verification === null);
     }
+    public function testSignedPayoutOtpFailedEventDoesNotMarkMoneyDelivered(): void
+    {
+        $mock = new MockTransport();
+        $mock->responses[] = new RawResponse(200, '{"status":"success","data":{"status":"OTP_NEEDED","chapa_reference":"CP_T_OTP","merchant_reference":"PAYOUTOTP1","amount":200000,"currency":"ETB"}}');
+        $this->app->instance(ChapaClient::class, new ChapaClient('private', 'public', 'webhook-secret', $mock));
+        Event::fake([ChapaWebhookProcessed::class]);
+        $raw = json_encode([
+            'webhook_type' => 'payout', 'event' => 'payout.otp_failed',
+            'status' => 'otp_failed', 'mode' => 'test',
+            'chapa_reference' => 'CP_T_OTP', 'merchant_reference' => 'PAYOUTOTP1',
+            'amount' => '200000', 'currency' => 'ETB', 'service_fee' => '6000',
+            'otp_attempts' => 3, 'payout_type' => 'customer_payout',
+            'account' => [
+                'account_name' => 'Sensitive Recipient',
+                'account_number' => '00123456789',
+                'bank_slug' => 'cbe', 'bank_name' => 'Commercial Bank of Ethiopia',
+            ],
+        ], JSON_THROW_ON_ERROR);
+        $receipt = $this->app->make(WebhookInbox::class)->accept($raw, hash_hmac('sha256', $raw, 'webhook-secret'));
+        self::assertTrue($this->app->make(WebhookProcessor::class)->process($receipt->receiptId));
+        Event::assertDispatched(ChapaWebhookProcessed::class, static function ($event): bool {
+            return $event->webhook->payoutDetails()?->otpAttempts === 3
+                && $event->webhook->payoutDetails()?->serviceFeeCents === 6000
+                && !$event->payoutMatches(200000, 'ETB', 'PAYOUTOTP1');
+        });
+        self::assertSame('processed', DB::table('chapa_webhook_receipts')->where('id', $receipt->receiptId)->value('state'));
+        self::assertCount(1, $mock->requests);
+        self::assertSame('GET', $mock->requests[0]['method']); // No payout POST or retry
+    }
+
 }

@@ -29,6 +29,8 @@ final class LaravelTransferApprovalTest extends TestCase
         $app['config']->set('database.default', 'sqlite');
         $app['config']->set('database.connections.sqlite.database', ':memory:');
         $app['config']->set('chapa.transfer_approval.enabled', true);
+        $app['config']->set('chapa.secret_key', 'CHAPA_TEST_inert');
+        $app['config']->set('chapa.transfer_approval.live_enabled', false);
         $app['config']->set('chapa.transfer_approval.secret', self::SECRET);
         $app['config']->set('chapa.transfer_approval.mode', 'test');
         $app['config']->set('chapa.transfer_approval.integration', 'merchant-one');
@@ -274,6 +276,41 @@ final class LaravelTransferApprovalTest extends TestCase
         } catch (\LogicException) {
             self::assertCount(0, $transport->requests);
         }
+    }
+
+    public function testLiveTransfersCannotBeEnabledByTheGeneralSwitchAlone(): void
+    {
+        $this->app['config']->set('chapa.transfer_approval.mode', 'live');
+        $this->app['config']->set('chapa.secret_key', 'CHAPA_LIVE_synthetic');
+        $manager = $this->app->make(TransferApprovalManager::class);
+        try {
+            $manager->request($this->payload(), 'user:22');
+            self::fail('Live transfer approval must require separate opt-in.');
+        } catch (\LogicException $exception) {
+            self::assertStringContainsString('separate explicit opt-in', $exception->getMessage());
+        }
+        self::assertFalse($this->app->make(TransferApprovalGate::class)->check(
+            $body = $this->callbackBody(), hash_hmac('sha256', $body, self::SECRET),
+        ));
+        self::assertSame(0, DB::table('chapa_transfer_approvals')->count());
+    }
+
+    public function testMismatchedTestModeAndLiveKeyAreRejectedBeforeStorageOrNetwork(): void
+    {
+        $this->app['config']->set('chapa.secret_key', 'CHAPA_LIVE_incorrect_for_test');
+        $manager = $this->app->make(TransferApprovalManager::class);
+        $this->expectException(\LogicException::class);
+        $manager->request($this->payload(), 'user:22');
+    }
+
+    public function testTestKeyIsNotAcceptedInLiveModeEvenAfterExplicitLiveOptIn(): void
+    {
+        $this->app['config']->set('chapa.transfer_approval.mode', 'live');
+        $this->app['config']->set('chapa.transfer_approval.live_enabled', true);
+        $this->app['config']->set('chapa.secret_key', 'CHAPA_TEST_not_live');
+        $manager = $this->app->make(TransferApprovalManager::class);
+        $this->expectException(\LogicException::class);
+        $manager->request($this->payload(), 'user:22');
     }
 
 }

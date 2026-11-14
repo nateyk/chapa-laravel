@@ -20,12 +20,21 @@ final class WebhookConsistency
         'payout.failed' => 'FAILED',
         'payout.reversed' => 'REVERSED',
         'payout.blocked' => 'BLOCKED',
+        'payout.auth_needed' => 'AUTH_NEEDED',
+        'payout.otp_needed' => 'OTP_NEEDED',
     ];
 
     public static function assertCurrent(WebhookEvent $event, VerifiedTransaction $verified): void
     {
         if ($event->type !== $verified->kind) {
             throw new \UnexpectedValueException('Webhook verification resource type mismatch.');
+        }
+        // OTP_FAILED is a webhook attempt, not a documented payout
+        // verification status. Never treat it as delivered and never dispatch it
+        // after Chapa verification has already reached SUCCESS or REVERSED.
+        if ($event->name === 'payout.otp_failed'
+            && in_array($verified->status, ['SUCCESS', 'REVERSED'], true)) {
+            throw new \UnexpectedValueException('OTP failure notification differs from verified payout state.');
         }
         $expected = self::TERMINAL_STATUS[$event->name] ?? null;
         if ($expected !== null && $verified->status !== $expected) {

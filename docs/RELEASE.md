@@ -28,6 +28,12 @@ Treat Laravel 11 as a **separate security release blocker** until upstream packa
 
 These depend on a private merchant account and/or Chapa support. Offline tests **cannot** satisfy them. Do not activate real-money transfer approval before they are confirmed.
 
+## Automated pre-release gates
+
+Run `php bin/chapa release:check --json` to check local package identity and list blockers. The output always marks external release readiness as false. CI verifies that the SDK declares no external runtime package dependencies, audits the resolved development dependency graph with `composer audit`, and builds a distributable archive using `composer archive`; neither step publishes the package.
+
+See [Packagist playbook](PACKAGIST-RELEASE.md), [Laravel 11 security report](LARAVEL-11-SECURITY.md) and [Chapa callback compatibility](CHAPA-CALLBACK-COMPATIBILITY.md). Real test-mode Chapa integration remains mandatory before the pre-release tag.
+
 ## Packagist registration (maintainer action)
 
 1. Sign into [packagist.org](https://packagist.org/) with the maintainer account that can administer `nateyk/chapa-laravel`.

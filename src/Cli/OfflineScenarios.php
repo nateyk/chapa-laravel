@@ -10,6 +10,7 @@ use Nateyk\Chapa\Http\RawResponse;
 use Nateyk\Chapa\Support\PaymentVerifier;
 use Nateyk\Chapa\Transfers\ApprovalCallback;
 use Nateyk\Chapa\Transfers\ApprovalSignature;
+use Nateyk\Chapa\Webhooks\WebhookEvent;
 
 /** No user credentials, real wallets, external HTTP or webhooks. All inputs are synthetic. */
 final class OfflineScenarios
@@ -130,6 +131,19 @@ final class OfflineScenarios
         $report->add('webhooks.invalid_status_rejected', $harness->receive(array_replace($base, [
             'event' => 'payment.success', 'status' => 'failed',
         ])) === 'rejected_signature_or_payload');
+        $otp = array_replace($payout, [
+            'event' => 'payout.otp_needed', 'status' => 'otp_needed',
+            'otp_channel' => ['sms', 'email', 'telegram'],
+            'updated_at' => '2026-11-13T10:06:00Z',
+        ]);
+        $report->add('webhooks.payout_otp_needed_review_after_success',
+            $harness->receive($otp) === 'review_ordering');
+        $report->add('webhooks.payout_otp_failed_valid_details',
+            WebhookEvent::fromArray(array_replace($otp, [
+                'event' => 'payout.otp_failed', 'status' => 'otp_failed', 'otp_attempts' => 3,
+            ]))->payoutDetails()?->otpAttempts === 3);
+        $report->add('webhooks.payout_otp_malformed_rejected',
+            $harness->receive(array_replace($otp, ['otp_channel' => 'sms'])) === 'rejected_signature_or_payload');
     }
 
     /** No Laravel, database, keys or network: only synthetic approval callback behavior. */

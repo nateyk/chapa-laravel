@@ -29,6 +29,27 @@ $arguments = array_slice($argv, 1);
 if ($arguments === [] || in_array($arguments[0], ['--help', '-h', 'help'], true)) {
     exit((new TestConsole())->run(['--help']));
 }
+if ($arguments[0] === 'release:check') {
+    $options = array_slice($arguments, 1);
+    if ($options !== [] && $options !== ['--json']) {
+        fwrite(STDERR, "Usage: php bin/chapa release:check [--json]\n");
+        exit(2);
+    }
+    $report = (new \Nateyk\Chapa\Cli\ReleaseReadiness())->inspect();
+    if ($options === ['--json']) {
+        fwrite(STDOUT, json_encode($report, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR)."\n");
+    } else {
+        fwrite(STDOUT, 'OFFLINE '.$report['kind'].': '.($report['offline_pass'] ? 'PASS' : 'FAIL')."\n");
+        foreach ($report['checks'] as $key => $ok) {
+            fwrite(STDOUT, ($ok ? 'PASS ' : 'FAIL ').$key."\n");
+        }
+        fwrite(STDOUT, "RELEASE BLOCKED: external Chapa, Laravel 11 security and Packagist gates remain.\n");
+        foreach ($report['outstanding'] as $key => $status) {
+            fwrite(STDOUT, 'PENDING '.$key.' = '.$status."\n");
+        }
+    }
+    exit($report['offline_pass'] ? 0 : 1);
+}
 if ($arguments[0] === 'simulate') {
     $options = array_slice($arguments, 1);
     if (count($options) > 2 || count(array_filter($options, static fn ($arg): bool => $arg === '--json')) > 1) {

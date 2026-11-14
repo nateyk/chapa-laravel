@@ -21,6 +21,8 @@ A **community-maintained**, framework-independent PHP SDK for [Chapa API v2](htt
 - Immutable typed DTOs for hosted/direct/inline payment requests, payouts, and refunds, plus typed payment/payout/refund verification views (raw arrays still work)
 - Optional encrypted Laravel webhook inbox, replay protection, verified processing, retry/backoff and manual recovery commands
 - Opt-in merchant-admin transfer approval ledger, encrypted destination details, signed approval URL callback and one-time payout dispatch (v1 callback protocol; v2 compatibility still unverified)
+- Validated v2 payout webhook fields: OTP channels/attempts, payout type, fee, processor reference and auth reason; masked destination details and verified-only payout settlement helpers
+- Offline release preflight CLI, runtime Composer security audit and package archive CI
 - PHP 8.2+, no mandatory runtime dependencies beyond `ext-json`
 
 ## Test-mode CLI playground
@@ -77,6 +79,17 @@ See [Transfer Approval URL and admin workflow](docs/TRANSFER-APPROVAL.md), [illu
 ### Laravel compatibility security note
 
 The CI matrix now explicitly tests Laravel 11, 12 and 13. Composer currently blocks **all published Laravel 11 versions** due to security advisories; its isolated compatibility job uses a temporary audit override with a visible warning, but **normal SDK and production installs do not bypass security policy**. Laravel 11 API compatibility is not a production-safety certification. See [release gates](docs/RELEASE.md).
+
+### Offline release preflight
+
+Check SDK metadata and see explicit blockers **without any Chapa credentials or HTTP requests**:
+
+```bash
+php bin/chapa release:check
+php bin/chapa release:check --json
+```
+
+The CI package gate confirms zero third-party runtime dependencies, audits development dependencies, and validates an archive. Neither operation creates a tag, registers Packagist or establishes real-money readiness. Read [Packagist preparation](docs/PACKAGIST-RELEASE.md), [Laravel 11 advisory review](docs/LARAVEL-11-SECURITY.md) and [Chapa Approval URL compatibility](docs/CHAPA-CALLBACK-COMPATIBILITY.md).
 
 ## Installation
 
